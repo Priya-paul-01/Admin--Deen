@@ -1,0 +1,9 @@
+function showToast(msg){const t=document.getElementById("tt");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1800);}
+document.getElementById("themeBtn").addEventListener("click",function(){const d=document.documentElement;const c=d.getAttribute("data-theme");const n=c==="dark"?"light":"dark";d.setAttribute("data-theme",n);document.getElementById("themeIcon").textContent=n==="dark"?"🌙":"☀️";document.getElementById("themeLbl").textContent=n==="dark"?"Dark":"Light";try{localStorage.setItem("lcp_theme",n)}catch(e){}});
+try{if(localStorage.getItem("lcp_theme")==="light"){document.documentElement.setAttribute("data-theme","light");document.getElementById("themeIcon").textContent="☀️";document.getElementById("themeLbl").textContent="Light"}}catch(e){}
+document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("act")});t.classList.add("act");cs=t.dataset.sheet;st="";cf_="";sf_="";pf_="";sortCol=-1;sortDir=1;_curPage=1;document.getElementById("si").value="";document.getElementById("cf").value="";document.getElementById("sf").value="";document.getElementById("pf").value="";updateFilters();renderStats();renderCharts();renderTable()})});
+updateFilters();renderStats();renderCharts();renderTable();
+window.addEventListener("resize",function(){renderCharts()});
+const tpEl2=document.getElementById("tp");document.addEventListener("mousemove",function(e){const el=e.target.closest("td[title]");if(el&&el.title){tpEl2.style.display="block";tpEl2.style.left=(e.clientX+8)+"px";tpEl2.style.top=(e.clientY+8)+"px";tpEl2.textContent=el.title}else{tpEl2.style.display="none"}});
+document.getElementById("rdm").addEventListener("change",function(e){srdm=e.target.value;renderCharts()});
+</script></body></html>

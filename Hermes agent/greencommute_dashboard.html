@@ -1,0 +1,2625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenCommute – Employee Transportation & Carbon Sustainability Dashboard | PARC GCC LTD</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/SheetJS/0.20.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root {
+    --primary: #1a56db;
+    --primary-dark: #1e3a8a;
+    --primary-light: #dbeafe;
+    --secondary: #6b7280;
+    --secondary-dark: #4b5563;
+    --success: #059669;
+    --success-light: #d1fae5;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --bg: #f3f4f6;
+    --bg-card: #ffffff;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    --radius: 8px;
+}
+.dark {
+    --bg: #0f172a;
+    --bg-card: #1e293b;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3);
+    --primary-light: #1e3a8a;
+    --success-light: #064e3b;
+    --warning-light: #78350f;
+    --danger-light: #7f1d1d;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+.login-box { background: var(--bg-card); padding: 48px; border-radius: 12px; box-shadow: var(--shadow-lg); width: 420px; max-width: 95vw; }
+.login-box h1 { font-size: 24px; color: var(--primary); margin-bottom: 8px; text-align: center; }
+.login-box .subtitle { color: var(--text-muted); text-align: center; margin-bottom: 32px; font-size: 14px; }
+.login-box .company { text-align: center; color: var(--primary); font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+.login-box input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; margin-bottom: 16px; background: var(--bg); color: var(--text); transition: border-color 0.2s; }
+.login-box input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+.login-box button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.login-box button:hover { background: var(--primary-dark); }
+.login-box .error-msg { color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; }
+.login-box .password-prompt { background: var(--warning-light); padding: 12px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+.navbar { background: var(--primary-dark); color: white; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+.navbar .brand { font-size: 18px; font-weight: 700; color: white; text-decoration: none; }
+.navbar .nav-links { display: flex; margin-left: auto; gap: 4px; align-items: center; overflow-x: auto; }
+.navbar .nav-links a { color: rgba(255,255,255,0.85); text-decoration: none; padding: 8px 14px; border-radius: var(--radius); font-size: 14px; font-weight: 500; transition: all 0.2s; white-space: nowrap; }
+.navbar .nav-links a:hover, .navbar .nav-links a.active { background: rgba(255,255,255,0.15); color: white; }
+.navbar .user-info { display: flex; align-items: center; gap: 12px; margin-left: 16px; }
+.navbar .user-info .role-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.navbar .user-info .role-badge.admin { background: var(--danger); color: white; }
+.navbar .user-info .role-badge.user { background: var(--secondary); color: white; }
+.theme-toggle { background: rgba(255,255,255,0.15); border: none; color: white; padding: 6px 12px; border-radius: var(--radius); cursor: pointer; font-size: 13px; }
+.theme-toggle:hover { background: rgba(255,255,255,0.25); }
+.main-content { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 24px; }
+|.page-header h2 { font-size: 22px; color: var(--primary-dark); margin-bottom: 4px; }
+.dark .page-header h2 { color: #f1f5f9; }
+.dark .page-header p { color: #94a3b8; }
+.dark table th { color: #f1f5f9; background: #1e3a8a; }
+.dark .card-header h3 { color: #f1f5f9; }
+.dark .status-active { color: #34d399; }
+.dark .status-inactive { color: #f87171; }
+.dark .btn { color: #f1f5f9; border-color: #334155; }
+.dark .btn:hover { color: #93c5fd; border-color: #3b82f6; }
+.page-header p { color: var(--text-muted); font-size: 14px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: var(--bg-card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); transition: transform 0.2s; }
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-card.green { border-left-color: var(--success); }
+.kpi-card.amber { border-left-color: var(--warning); }
+.kpi-card .kpi-label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text); }
+.kpi-card .kpi-unit { font-size: 14px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
+.kpi-card .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.card { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+.card-header h3 { font-size: 17px; color: var(--text); }
+.card-header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { padding: 8px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--primary); color: var(--primary); }
+.btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); color: white; }
+.btn-success { background: var(--success); color: white; border-color: var(--success); }
+.btn-success:hover { background: #047857; color: white; }
+.btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+.btn-danger:hover { background: #b91c1c; color: white; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-xs { padding: 3px 8px; font-size: 11px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.form-group .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--bg); color: var(--text); transition: border-color 0.2s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+.form-group input.error, .form-group select.error { border-color: var(--danger); background: var(--danger-light); }
+.form-group .field-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: none; }
+.form-group input.error ~ .field-error { display: block; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.table-wrap { overflow-x: auto; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table th { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+table tr:hover { background: var(--primary-light); }
+.status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.status-active { background: var(--success-light); color: var(--success); }
+.status-inactive { background: var(--danger-light); color: var(--danger); }
+.action-cell { white-space: nowrap; display: flex; gap: 4px; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 200; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--bg-card); border-radius: 12px; padding: 24px; width: 500px; max-width: 95vw; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.modal h3 { margin-bottom: 16px; font-size: 18px; color: var(--primary-dark); }
+.modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+.chart-card { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+.chart-card h4 { margin-bottom: 12px; font-size: 15px; color: var(--primary-dark); }
+.chart-card canvas { max-height: 300px; }
+.filters-bar { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; padding: 16px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); }
+.filters-bar .form-group { margin-bottom: 0; min-width: 150px; }
+.filters-bar .form-group label { margin-bottom: 4px; }
+.filter-actions { display: flex; gap: 8px; margin-left: auto; }
+.dq-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.dq-item { background: var(--bg-card); border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); }
+.dq-item .dq-value { font-size: 24px; font-weight: 700; }
+.dq-item .dq-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.dq-item.warn .dq-value { color: var(--warning); }
+.dq-item.danger .dq-value { color: var(--danger); }
+.dq-item.success .dq-value { color: var(--success); }
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 12px 18px; border-radius: var(--radius); color: white; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); animation: slideIn 0.3s ease; max-width: 360px; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--primary); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@media print {
+    .navbar, .filters-bar, .btn, .modal-overlay, .toast-container { display: none !important; }
+    .main-content { padding: 0; }
+    .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+}
+@media (max-width: 768px) {
+    .navbar { padding: 0 12px; height: 52px; }
+    .main-content { padding: 12px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .filters-bar { flex-direction: column; }
+    .filter-actions { margin-left: 0; width: 100%; }
+    .login-box { padding: 24px; }
+}
+.empty-state { text-align: center; padding: 48px; color: var(--text-muted); }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.tree-nav { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; padding: 16px; background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); }
+.tree-nav .tree-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; font-size: 14px; color: var(--text); transition: background 0.2s; }
+.tree-nav .tree-item:hover { background: var(--primary-light); }
+.tree-nav .tree-item.active { background: var(--primary); color: white; }
+.tree-nav .tree-item .icon { width: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<div id="loginPage" class="login-page">
+    <div class="login-box">
+        <div class="company">PARC GCC LTD</div>
+        <h1>GreenCommute Dashboard</h1>
+        <p class="subtitle">Employee Transportation & Carbon Sustainability Management</p>
+        <div id="passwordPrompt" style="display:none;" class="password-prompt">
+            ⚠️ This is your first login. Please create a new password.
+        </div>
+        <input type="text" id="loginId" placeholder="Login ID" autocomplete="off">
+        <input type="password" id="loginPass" placeholder="Password">
+        <button onclick="handleLogin()">Sign In</button>
+        <div id="loginError" class="error-msg"></div>
+    </div>
+</div>
+
+<div id="mainApp" style="display:none;">
+    <nav class="navbar">
+        <a href="#" class="brand" onclick="navigate('dashboard');return false;">🌿 GreenCommute</a>
+        <div class="nav-links" id="navLinks"></div>
+        <div class="user-info">
+            <span class="role-badge admin" id="roleBadge" style="display:none;">ADMIN</span>
+            <span class="role-badge user" id="roleBadgeUser" style="display:none;">USER</span>
+            <span id="userNameDisplay" style="font-size:13px;opacity:0.8;"></span>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+            <button class="theme-toggle" onclick="handleLogout()" style="background:rgba(255,255,255,0.25);color:white;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="tree-nav" id="treeNav"></div>
+
+        <div class="page active" id="page-dashboard">
+            <div class="page-header">
+                <h2>📊 Management Dashboard</h2>
+                <p>PARC GCC LTD — Employee Commuting & Sustainability Overview</p>
+            </div>
+            <div class="kpi-grid" id="kpiGrid"></div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>📈 Sustainability Charts</h3>
+                    <div class="actions"><button class="btn btn-sm" onclick="refreshDashboardCharts()">🔄 Refresh</button></div>
+                </div>
+                <div class="chart-grid" id="dashboardCharts"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>🔍 Data Quality Summary</h3><div class="actions"><button class="btn btn-sm" onclick="navigate('data-quality')">View Details</button></div></div>
+                <div class="dq-grid" id="dqSummary"></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-travel-data">
+            <div class="page-header">
+                <h2>✈️ Employee Travel Data Entry</h2>
+                <p>Add, edit, and manage employee daily commuting records</p>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>New Travel Record</h3>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="clearTravelForm()">Clear</button>
+                        <button class="btn btn-success" onclick="saveTravelRecord()">💾 Save Record</button>
+                    </div>
+                </div>
+                <div id="travelForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Employee Name *</label>
+                            <input type="text" id="travName" placeholder="Enter employee name">
+                            <div class="field-error">Required. Min 3 chars, max 30. Alphabets & spaces only.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Employee ID *</label>
+                            <input type="text" id="travEmpId" placeholder="e.g. 75001" maxlength="5">
+                            <div class="field-error">Required. Numeric only. Max 5 digits. Must start with 75.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Branch *</label>
+                            <select id="travBranch"><option value="">Select Branch</option></select>
+                            <div class="field-error">Please select a branch.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <select id="travDept"><option value="">Select Department</option>
+                                <option value="Africa Team">Africa Team</option>
+                                <option value="Visibility Team">Visibility Team</option>
+                                <option value="US Team">US Team</option>
+                                <option value="Finance Team">Finance Team</option>
+                                <option value="Sweepers">Sweepers</option>
+                            </select>
+                            <div class="hint">Or select "New Department" below to create one.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Mode of Travel *</label>
+                            <select id="travMode" onchange="updateFuelOptions()">
+                                <option value="">Select Mode</option>
+                            </select>
+                            <div class="field-error">Please select a mode of travel.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Fuel Type</label>
+                            <select id="travFuel"><option value="">Select Fuel (if applicable)</option></select>
+                            <div class="hint">Fuel type shown based on selected travel mode. Select "None" for walking/cycling.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Daily Round-Trip Distance (km) *</label>
+                            <input type="number" id="travDistance" placeholder="e.g. 20" min="1" max="500">
+                            <div class="field-error">Required. Numeric only. Must be > 0. No decimals. Max 500 km.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <input type="text" id="travNotes" placeholder="Optional notes">
+                        </div>
+                    </div>
+                    <div id="travelFormMsg" style="margin-top:8px;"></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Travel Records</h3>
+                    <div class="actions">
+                        <input type="text" id="travSearch" placeholder="🔍 Search records..." oninput="renderTravelTable()" style="width:200px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                        <button class="btn btn-sm" onclick="exportTravelCSV()">📥 CSV</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="travelTable">
+                        <thead><tr><th>S.No</th><th>Name</th><th>Employee ID</th><th>Branch</th><th>Dept</th><th>Mode</th><th>Fuel</th><th>Distance (km)</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-employee-master">
+            <div class="page-header">
+                <h2>👥 Employee Master Data - DEEN</h2>
+                <p>Manage employee profiles, departments, and statuses</p>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Add / Edit Employee</h3>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="clearEmpForm()">Clear</button>
+                        <button class="btn btn-success" onclick="saveEmployee()">💾 Save Employee</button>
+                    </div>
+                </div>
+                <div id="empForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Employee Name *</label>
+                            <input type="text" id="empName" placeholder="Full name">
+                            <div class="field-error">Required. Min 3 chars, max 30. Alphabets & spaces only.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Employee ID *</label>
+                            <input type="text" id="empId" placeholder="e.g. 75001" maxlength="5">
+                            <div class="field-error">Required. Numeric only. Max 5 digits. Must start with 75. Unique.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Branch *</label>
+                            <select id="empBranch"><option value="">Select Branch</option></select>
+                            <div class="field-error">Please select a branch.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <select id="empDept" onchange="checkNewDept()">
+                                <option value="">Select Department</option>
+                                <option value="Africa Team">Africa Team</option>
+                                <option value="Visibility Team">Visibility Team</option>
+                                <option value="US Team">US Team</option>
+                                <option value="Finance Team">Finance Team</option>
+                                <option value="Sweepers">Sweepers</option>
+                                <option value="__new__">+ New Department</option>
+                            </select>
+                            <div class="field-error" id="empDeptNewErr" style="display:none;">Please enter the new department name.</div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="newDeptGroup" style="display:none;">
+                        <label>New Department Name</label>
+                        <input type="text" id="empNewDept" placeholder="Enter new department name">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Mobile Number</label>
+                            <input type="text" id="empMobile" placeholder="Mobile number">
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="empStatus">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="empFormMsg" style="margin-top:8px;"></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Employee Directory</h3>
+                    <div class="actions">
+                        <input type="text" id="empSearch" placeholder="🔍 Search employees..." oninput="renderEmployeeTable()" style="width:200px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                        <select id="empFilterBranch" onchange="renderEmployeeTable()" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;"><option value="">All Branches</option></select>
+                        <select id="empFilterId" onchange="renderEmployeeTable()" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;"><option value="">All Employee IDs</option></select>
+                        <button class="btn btn-sm btn-primary" onclick="document.getElementById('empImportFile').click()">📥 Import CSV</button>
+                        <button class="btn btn-sm" onclick="exportEmployeeCSV()">📤 Export CSV</button>
+                        <input type="file" id="empImportFile" accept=".csv" style="display:none;" onchange="importEmployeeCSV(this)">
+                        ${isAdmin() ? `<button class="btn btn-sm btn-danger" id="deleteSelectedBtn" onclick="deleteSelectedEmployees()" style="display:none;">🗑️ Delete Selected</button>` : ''}
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="empTable">
+                        <thead><tr><th><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll()"></th><th>Name</th><th>Employee ID</th><th>Branch</th><th>Department</th><th>Mobile</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-branch-master">
+            <div class="page-header"><h2>📍 Branch Master</h2><p>Manage office branches and locations</p></div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Add Branch</h3>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="clearBranchForm()">Clear</button>
+                        <button class="btn btn-success" onclick="saveBranch()">💾 Add Branch</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Branch Name *</label>
+                    <input type="text" id="branchName" placeholder="e.g. Tuticorin CGE Colony">
+                    <div class="field-error">Branch name required.</div>
+                </div>
+                <div id="branchFormMsg"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Branch List</h3><div class="actions"><button class="btn btn-sm btn-danger" onclick="clearAllBranches()">⚠️ Clear All</button></div></div>
+                <div class="table-wrap">
+                    <table id="branchTable"><thead><tr><th>S.No</th><th>Branch Name</th><th>Employee Count</th><th>Actions</th></tr></thead><tbody></tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-mode-master">
+            <div class="page-header"><h2>🚗 Travel Mode Master</h2><p>Configure transportation modes</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Add Travel Mode</h3><div class="actions"><button class="btn btn-primary" onclick="clearModeForm()">Clear</button><button class="btn btn-success" onclick="saveTravelMode()">💾 Add Mode</button></div></div>
+                <div class="form-group"><label>Mode Name *</label><input type="text" id="modeName" placeholder="e.g. Car, Bike, Bus, Walk, Cycle"><div class="field-error">Mode name required.</div></div>
+                <div id="modeFormMsg"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Travel Modes</h3><div class="actions"><button class="btn btn-sm btn-danger" onclick="clearAllModes()">⚠️ Clear All</button></div></div>
+                <div class="table-wrap"><table id="modeTable"><thead><tr><th>S.No</th><th>Mode</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-fuel-master">
+            <div class="page-header"><h2>⛽ Fuel Master</h2><p>Configure fuel types per travel mode</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Add Fuel Type</h3><div class="actions"><button class="btn btn-primary" onclick="clearFuelForm()">Clear</button><button class="btn btn-success" onclick="saveFuelType()">💾 Add Fuel</button></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Travel Mode *</label><select id="fuelMode"><option value="">Select Mode</option></select><div class="field-error">Select a travel mode.</div></div>
+                    <div class="form-group"><label>Fuel Type *</label><input type="text" id="fuelType" placeholder="e.g. Petrol, Diesel, Electric"><div class="field-error">Fuel type required.</div></div>
+                </div>
+                <div id="fuelFormMsg"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Fuel Types by Mode</h3><div class="actions"><button class="btn btn-sm btn-danger" onclick="clearAllFuels()">⚠️ Clear All</button></div></div>
+                <div class="table-wrap"><table id="fuelTable"><thead><tr><th>S.No</th><th>Mode</th><th>Fuel Type</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-emission-factors">
+            <div class="page-header"><h2>🌍 Emission & Consumption Factors</h2><p>Configure CO₂ emission factors and fuel economy rates</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Add Factor</h3><div class="actions"><button class="btn btn-primary" onclick="clearFactorForm()">Clear</button><button class="btn btn-success" onclick="saveEmissionFactor()">💾 Save Factor</button></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Vehicle / Travel Type *</label><select id="factorType"><option value="">Select Type</option></select><div class="field-error">Select a type.</div></div>
+                    <div class="form-group"><label>Fuel Type *</label><select id="factorFuel"><option value="">Select Fuel</option></select><div class="field-error">Select a fuel type.</div></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Fuel Economy (km/l or km/kg)</label><input type="number" id="factorEconomy" step="0.1" min="0.1" placeholder="e.g. 15"><div class="hint">Distance per unit of fuel</div></div>
+                    <div class="form-group"><label>Emission Factor (kg CO₂/unit)</label><input type="number" id="factorEmit" step="0.001" min="0" placeholder="e.g. 2.3"><div class="hint">kg CO₂ per unit of fuel</div></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Unit</label><select id="factorUnit"><option value="litre">Litre</option><option value="kg">Kg</option><option value="kWh">kWh</option></select></div>
+                    <div class="form-group"><label>Emission Factor Unit</label><select id="factorEmitUnit"><option value="kgCO2_per_unit">kg CO₂ / unit</option></select></div>
+                </div>
+                <div id="factorFormMsg"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Emission Factor Configuration</h3><div class="actions"><button class="btn btn-sm" onclick="exportFactorsCSV()">📥 CSV</button></div></div>
+                <div class="table-wrap"><table id="factorTable"><thead><tr><th>S.No</th><th>Vehicle Type</th><th>Fuel Type</th><th>Fuel Economy</th><th>Unit</th><th>Emission Factor</th><th>Emit Unit</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-sustainability">
+            <div class="page-header"><h2>🌱 Sustainability Dashboard</h2><p>Carbon footprint analysis and green initiative tracking</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Sustainability KPIs</h3><div class="actions"><button class="btn btn-sm" onclick="refreshSustainability()">🔄 Refresh</button></div></div>
+                <div class="kpi-grid" id="sustKPIs"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Sustainability Charts</h3><div class="actions"><button class="btn btn-sm" onclick="refreshSustainabilityCharts()">🔄 Refresh</button></div></div>
+                <div class="chart-grid" id="sustCharts"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Potential CO₂ Reduction by Sustainability Initiative</h3>
+                    <div class="actions"><button class="btn btn-sm" onclick="showReductionModal()">Add Initiative</button></div>
+                </div>
+                <div class="table-wrap"><table id="reductionTable"><thead><tr><th>S.No</th><th>Initiative Name</th><th>Target Mode</th><th>Estimated Annual Reduction (kg CO₂)</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-reports">
+            <div class="page-header"><h2>📋 Management Reports</h2><p>Comprehensive employee commuting and sustainability reports</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Report Filters</h3>
+                    <div class="actions">
+                        <button class="btn btn-sm" onclick="clearAllFilters()">🧹 Clear Filters</button>
+                        <button class="btn btn-sm btn-primary" onclick="exportReportExcel()">📥 Excel</button>
+                        <button class="btn btn-sm btn-primary" onclick="exportReportCSV()">📥 CSV</button>
+                        <button class="btn btn-sm" onclick="printReport()">🖨️ Print</button>
+                        <button class="btn btn-sm btn-primary" onclick="exportReportPDF()">📥 PDF</button>
+                    </div>
+                </div>
+                <div class="filters-bar" id="reportFilters">
+                    <div class="form-group"><label>Branch</label><select id="rptBranch" onchange="applyReportFilters()"><option value="">All Branches</option></select></div>
+                    <div class="form-group"><label>Mode of Travel</label><select id="rptMode" onchange="applyReportFilters()"><option value="">All Modes</option></select></div>
+                    <div class="form-group"><label>Fuel Type</label><select id="rptFuel" onchange="applyReportFilters()"><option value="">All Fuels</option></select></div>
+                    <div class="form-group"><label>Employee</label><select id="rptEmployee" onchange="applyReportFilters()"><option value="">All Employees</option></select></div>
+                    <div class="form-group"><label>Distance Range (km)</label><select id="rptDistRange" onchange="applyReportFilters()"><option value="">Any</option><option value="0-10">0-10</option><option value="11-20">11-20</option><option value="21-30">21-30</option><option value="31-50">31-50</option><option value="50+">50+</option></select></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Reports</h3>
+                    <div class="actions">
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('commuting')">📄 Employee Commuting Report</button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('branch')">📄 Branch-wise Report</button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('mode')">📄 Travel Mode Report</button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('fuel')">📄 Fuel Report</button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('distance')">📄 Distance Report</button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('co2')">📄 CO₂ Emission Report</button>
+                        <button class="btn btn-sm btn-primary" onclick="generateReport('reduction')">📄 Potential CO₂ Reduction Report</button>
+                    </div>
+                </div>
+                <div id="reportContent"><div class="empty-state"><div class="empty-icon">📊</div><p>Select a report to generate</p></div></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-data-quality">
+            <div class="page-header"><h2>🔍 Data Quality Dashboard</h2><p>Monitoring data completeness, duplicates, and validation status</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Quality Metrics</h3></div>
+                <div class="dq-grid" id="dqFullGrid"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Records with Missing Information</h3></div>
+                <div class="table-wrap"><table id="missingDataTable"><thead><tr><th>S.No</th><th>Employee ID</th><th>Name</th><th>Missing Fields</th><th>Branch</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Duplicate Attempts (Blocked)</h3></div>
+                <div class="table-wrap"><table id="dupAttemptsTable"><thead><tr><th>S.No</th><th>Attempted Name</th><th>Attempted Emp ID</th><th>Existing Record</th><th>Timestamp</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="page" id="page-user-management">
+            <div class="page-header"><h2>🔐 User Management</h2><p>Manage system users and access levels</p></div>
+            <div class="card">
+                <div class="card-header"><h3>Add User</h3><div class="actions"><button class="btn btn-primary" onclick="clearUserForm()">Clear</button><button class="btn btn-success" onclick="saveUser()">💾 Add User</button></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Username *</label><input type="text" id="userName" placeholder="Login ID"><div class="field-error">Username required.</div></div>
+                    <div class="form-group"><label>Password *</label><input type="password" id="userPass" placeholder="Password"><div class="field-error">Password required.</div></div>
+                </div>
+                <div class="form-group"><label>Role</label><select id="userRole"><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select></div>
+                <div id="userFormMsg"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>Users</h3><div class="actions"><button class="btn btn-sm btn-danger" onclick="clearAllUsers()">⚠️ Clear All</button></div></div>
+                <div class="table-wrap"><table id="userTable"><thead><tr><th>S.No</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="detailModal">
+    <div class="modal">
+        <h3 id="detailTitle">Record Details</h3>
+        <div id="detailBody"></div>
+        <div class="modal-actions"><button class="btn" onclick="closeModal('detailModal')">Close</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="reductionModal">
+    <div class="modal">
+        <h3>Add Sustainability Initiative</h3>
+        <div class="form-group"><label>Initiative Name *</label><input type="text" id="redName" placeholder="e.g. Carpool Program"></div>
+        <div class="form-group"><label>Target Mode</label><select id="redMode"><option value="">Select Mode</option></select></div>
+        <div class="form-group"><label>Estimated Annual CO₂ Reduction (kg)</label><input type="number" id="redAmount" step="1" min="0" placeholder="e.g. 500"></div>
+        <div class="form-group"><label>Status</label><select id="redStatus"><option value="Proposed">Proposed</option><option value="Active">Active</option><option value="Completed">Completed</option></select></div>
+        <div class="modal-actions"><button class="btn" onclick="closeModal('reductionModal')">Cancel</button><button class="btn btn-success" onclick="saveReductionInitiative()">💾 Save</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="passwordModal">
+    <div class="modal">
+        <h3>Change Password - First Login</h3>
+        <p style="color:var(--text-muted);margin-bottom:16px;font-size:13px;">Please create a new password for your account.</p>
+        <div class="form-group"><label>New Password *</label><input type="password" id="newPass" placeholder="New password"></div>
+        <div class="form-group"><label>Confirm Password *</label><input type="password" id="confirmPass" placeholder="Confirm password"></div>
+        <div id="passwordModalMsg" style="margin-top:8px;"></div>
+        <div class="modal-actions"><button class="btn" onclick="closeModal('passwordModal')">Cancel</button><button class="btn btn-primary" onclick="changePassword()">💾 Change Password</button></div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const STORAGE_KEYS = {
+    USERS: 'gc_users',
+    TRAVEL: 'gc_travel',
+    EMPLOYEES: 'gc_employees',
+    BRANCHES: 'gc_branches',
+    MODES: 'gc_modes',
+    FUELS: 'gc_fuels',
+    FACTORS: 'gc_factors',
+    REDUCTIONS: 'gc_reductions',
+    DUPLICATE_ATTEMPTS: 'gc_dup_attempts',
+    CURRENT_USER: 'gc_current_user',
+    THEME: 'gc_theme'
+};
+
+function loadData(key) {
+    try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : []; }
+    catch(e) { return []; }
+}
+function saveData(key, data) {
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+}
+function loadCurrentUser() { return localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || null; }
+function saveCurrentUser(u) { localStorage.setItem(STORAGE_KEYS.CURRENT_USER, u); }
+function clearCurrentUser() { localStorage.removeItem(STORAGE_KEYS.CURRENT_USER); }
+
+function initDatabase() {
+    if (loadData(STORAGE_KEYS.BRANCHES).length === 0) {
+        saveData(STORAGE_KEYS.BRANCHES, [
+            { id: 'b1', name: 'Tuticorin CGE Colony' },
+            { id: 'b2', name: 'Tuticorin Millerpuram' }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.MODES).length === 0) {
+        saveData(STORAGE_KEYS.MODES, [
+            { id: 'm1', name: 'Bike' },
+            { id: 'm2', name: 'Car' },
+            { id: 'm3', name: 'Bus' },
+            { id: 'm4', name: 'Walk' },
+            { id: 'm5', name: 'Cycle' }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.FUELS).length === 0) {
+        saveData(STORAGE_KEYS.FUELS, [
+            { id: 'f1', mode: 'Bike', fuel: 'Petrol' },
+            { id: 'f2', mode: 'Bike', fuel: 'Electric' },
+            { id: 'f3', mode: 'Bike', fuel: 'Other' },
+            { id: 'f4', mode: 'Car', fuel: 'Petrol' },
+            { id: 'f5', mode: 'Car', fuel: 'Diesel' },
+            { id: 'f6', mode: 'Car', fuel: 'CNG' },
+            { id: 'f7', mode: 'Car', fuel: 'Electric' },
+            { id: 'f8', mode: 'Car', fuel: 'Hybrid' },
+            { id: 'f9', mode: 'Car', fuel: 'Other' },
+            { id: 'f10', mode: 'Bus', fuel: 'Diesel' },
+            { id: 'f11', mode: 'Bus', fuel: 'CNG' },
+            { id: 'f12', mode: 'Bus', fuel: 'Electric' },
+            { id: 'f13', mode: 'Bus', fuel: 'Other' },
+            { id: 'f14', mode: 'Walk', fuel: 'None' },
+            { id: 'f15', mode: 'Cycle', fuel: 'None' }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.FACTORS).length === 0) {
+        saveData(STORAGE_KEYS.FACTORS, [
+            { id: 'ef1', vehicleType: 'Bike', fuelType: 'Petrol', economy: 40, unit: 'litre', emissionFactor: 2.3, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef2', vehicleType: 'Bike', fuelType: 'Electric', economy: 1, unit: 'kWh', emissionFactor: 0.5, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef3', vehicleType: 'Car', fuelType: 'Petrol', economy: 15, unit: 'litre', emissionFactor: 2.3, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef4', vehicleType: 'Car', fuelType: 'Diesel', economy: 18, unit: 'litre', emissionFactor: 2.68, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef5', vehicleType: 'Car', fuelType: 'CNG', economy: 12, unit: 'kg', emissionFactor: 2.0, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef6', vehicleType: 'Car', fuelType: 'Electric', economy: 1, unit: 'kWh', emissionFactor: 0.5, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef7', vehicleType: 'Car', fuelType: 'Hybrid', economy: 22, unit: 'litre', emissionFactor: 1.5, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef8', vehicleType: 'Bus', fuelType: 'Diesel', economy: 5, unit: 'litre', emissionFactor: 2.68, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef9', vehicleType: 'Bus', fuelType: 'CNG', economy: 4, unit: 'kg', emissionFactor: 2.0, emitUnit: 'kgCO2_per_unit' },
+            { id: 'ef10', vehicleType: 'Bus', fuelType: 'Electric', economy: 1, unit: 'kWh', emissionFactor: 0.5, emitUnit: 'kgCO2_per_unit' }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.USERS).length === 0) {
+        saveData(STORAGE_KEYS.USERS, [
+            { username: 'admin', password: 'admin123', role: 'ADMIN', status: 'Active', changedPw: false }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.REDUCTIONS).length === 0) {
+        saveData(STORAGE_KEYS.REDUCTIONS, [
+            { id: 'r1', name: 'Carpool Program', mode: 'Car', reduction: 2000, status: 'Proposed' },
+            { id: 'r2', name: 'EV Adoption Incentive', mode: 'Car', reduction: 5000, status: 'Proposed' },
+            { id: 'r3', name: 'Cycling Encouragement', mode: 'Cycle', reduction: 1500, status: 'Active' }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.EMPLOYEES).length === 0) {
+        saveData(STORAGE_KEYS.EMPLOYEES, [
+            { id: 'e1', name: 'Pravin Bosco', empId: '75012', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e2', name: 'Sankar', empId: '75013', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e3', name: 'T Maria Antony Shamili', empId: '75061', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e4', name: 'Muthuraj B', empId: '75007', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e5', name: 'Krishnavel C', empId: '75031', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e6', name: 'Maria George Jegan', empId: '75014', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e7', name: 'Vimal Joe', empId: '75001', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e8', name: 'Saravanan', empId: '75046', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e9', name: 'Selvam R', empId: '75027', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e10', name: 'Mohamed AI Siddiq', empId: '75075', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e11', name: 'Mohamed Kaja Idhries', empId: '75077', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e12', name: 'Mohamed Aslam Irfan A', empId: '75089', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e13', name: 'Ponganesh', empId: '75094', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e14', name: 'Sesu Robin Anthony Michael', empId: '75090', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e15', name: 'Rabin T', empId: '75035', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e16', name: 'Bala Murugan', empId: '75099', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e17', name: 'Sivagyanam', empId: '75051', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e18', name: 'Rama Krishnan', empId: '75052', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e19', name: 'Mathan', empId: '75053', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e20', name: 'Vijay', empId: '75054', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e21', name: 'Stephen', empId: '75055', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e22', name: 'Reuben Ignatius', empId: '75056', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e23', name: 'Sudar Selvam', empId: '75057', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e24', name: 'Samsudeen M', empId: '75008', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e25', name: 'Franklin Soundararajan', empId: '75064', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e26', name: 'Deivanayagam', empId: '75011', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e27', name: 'Padma Priya', empId: '75044', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e28', name: 'Jebaraj jones', empId: '75005', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e29', name: 'Arul Anantha Prabhu', empId: '75043', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e30', name: 'Sreenandh A K', empId: '75071', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e31', name: 'Ramasamy', empId: '75069', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e32', name: 'Rajesh', empId: '75066', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e33', name: 'Sreyas S', empId: '75041', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e34', name: 'M Ramesh Kannan', empId: '75087', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e35', name: 'Dhileepan M', empId: '75042', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e36', name: 'Jerry Samuel Johnson Devasahayam', empId: '75049', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e37', name: 'Vijay Haridas', empId: '75055', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e38', name: 'Winston Francis Heylex Charles Amalanathan', empId: '75059', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e39', name: 'Antony R', empId: '75068', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e40', name: 'Siva Soorya Kumar Saravana Sunder', empId: '75067', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e41', name: 'Mari Selvam', empId: '75082', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e42', name: 'Anto Arockia Ashik Rickobar', empId: '75088', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e43', name: 'Esakki Arjun', empId: '75058', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e44', name: 'Boursian', empId: '75103', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e45', name: 'Infantsamson P', empId: '75097', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e46', name: 'Elaiya Ruban Edward Raj J', empId: '75098', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e47', name: 'Thishon', empId: '75109', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e48', name: 'Loyala Paul Crispin', empId: '75108', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e49', name: 'Security', empId: '75059', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' },
+            { id: 'e50', name: 'House Keeping', empId: '75060', branch: 'b1', dept: 'Unassigned', mobile: '', status: 'Active' }
+        ]);
+    }
+    if (loadData(STORAGE_KEYS.TRAVEL).length === 0) {
+        saveData(STORAGE_KEYS.TRAVEL, [
+            { id: 't1', empId: '75001', name: 'John Davis', branch: 'b1', dept: 'Finance Team', mode: 'Car', fuel: 'Petrol', distance: 30, notes: '', date: new Date().toISOString(), status: 'Active' },
+            { id: 't2', empId: '75002', name: 'Sarah Miller', branch: 'b1', dept: 'Visibility Team', mode: 'Bus', fuel: 'Diesel', distance: 25, notes: '', date: new Date().toISOString(), status: 'Active' },
+            { id: 't3', empId: '75003', name: 'Raj Patel', branch: 'b2', dept: 'Africa Team', mode: 'Bike', fuel: 'Petrol', distance: 15, notes: '', date: new Date().toISOString(), status: 'Active' },
+            { id: 't4', empId: '75004', name: 'Emily Chen', branch: 'b2', dept: 'US Team', mode: 'Walk', fuel: 'None', distance: 3, notes: '', date: new Date().toISOString(), status: 'Active' }
+        ]);
+    }
+}
+
+function handleLogin() {
+    const id = document.getElementById('loginId').value.trim();
+    const pw = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    if (!id || !pw) { errEl.textContent = 'Please enter both Login ID and Password.'; return; }
+    const users = loadData(STORAGE_KEYS.USERS);
+    const user = users.find(u => u.username === id && u.password === pw && u.status === 'Active');
+    if (!user) { errEl.textContent = 'Invalid Login ID or Password.'; return; }
+    if (!user.changedPw) {
+        document.getElementById('passwordPrompt').style.display = 'block';
+        document.getElementById('loginId').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('passwordModal').classList.add('show');
+        sessionStorage.setItem('pendingLogin', id);
+        return;
+    }
+    completeLogin(user);
+}
+
+function changePassword() {
+    const newPw = document.getElementById('newPass').value;
+    const confirmPw = document.getElementById('confirmPass').value;
+    const msgEl = document.getElementById('passwordModalMsg');
+    msgEl.textContent = '';
+    if (!newPw || newPw.length < 4) { msgEl.textContent = 'Password must be at least 4 characters.'; msgEl.style.color = 'var(--danger)'; return; }
+    if (newPw !== confirmPw) { msgEl.textContent = 'Passwords do not match.'; msgEl.style.color = 'var(--danger)'; return; }
+    const users = loadData(STORAGE_KEYS.USERS);
+    const pendingId = sessionStorage.getItem('pendingLogin');
+    const user = users.find(u => u.username === pendingId);
+    if (user) { user.password = newPw; user.changedPw = true; saveData(STORAGE_KEYS.USERS, users); }
+    sessionStorage.removeItem('pendingLogin');
+    document.getElementById('passwordModal').classList.remove('show');
+    document.getElementById('passwordPrompt').style.display = 'none';
+    document.getElementById('newPass').value = '';
+    document.getElementById('confirmPass').value = '';
+    msgEl.textContent = 'Password changed successfully. Please log in with your new password.';
+    msgEl.style.color = 'var(--success)';
+    setTimeout(() => { msgEl.textContent = ''; }, 2000);
+}
+
+function completeLogin(user) {
+    saveCurrentUser(user.username);
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('roleBadge').style.display = user.role === 'ADMIN' ? 'inline' : 'none';
+    document.getElementById('roleBadgeUser').style.display = user.role === 'USER' ? 'inline' : 'none';
+    document.getElementById('userNameDisplay').textContent = user.username;
+    buildNav();
+    navigate('dashboard');
+    toast('Welcome, ' + user.username + '!', 'success');
+}
+
+function handleLogout() {
+    clearCurrentUser();
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginId').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').textContent = '';
+    window.location.reload();
+}
+
+function isAdmin() {
+    const u = loadCurrentUser();
+    const users = loadData(STORAGE_KEYS.USERS);
+    const user = users.find(x => x.username === u);
+    return user && user.role === 'ADMIN';
+}
+
+function buildNav() {
+    const nav = document.getElementById('navLinks');
+    const tree = document.getElementById('treeNav');
+    const admin = isAdmin();
+    nav.innerHTML = '';
+    tree.innerHTML = '';
+    const items = [
+        { id: 'dashboard', label: '📊 Dashboard', icon: '📊' },
+        { id: 'travel-data', label: '✈️ Employee Travel Data', icon: '✈️' },
+        { id: 'employee-master', label: '👥 Employee Master', icon: '👥' },
+        { id: 'branch-master', label: '📍 Branch Master', icon: '📍' },
+        { id: 'mode-master', label: '🚗 Travel Mode Master', icon: '🚗' },
+        { id: 'fuel-master', label: '⛽ Fuel Master', icon: '⛽' },
+        { id: 'emission-factors', label: '🌍 Emission Factors', icon: '🌍' },
+        { id: 'sustainability', label: '🌱 Sustainability Dashboard', icon: '🌱' },
+        { id: 'reports', label: '📋 Reports', icon: '📋' },
+        { id: 'data-quality', label: '🔍 Data Quality', icon: '🔍' },
+        { id: 'user-management', label: '🔐 User Management', icon: '🔐' }
+    ];
+    items.forEach(item => {
+        const treeEl = document.createElement('div');
+        treeEl.className = 'tree-item';
+        treeEl.innerHTML = `<span class="icon">${item.icon}</span>${item.label}`;
+        treeEl.onclick = () => navigate(item.id);
+        tree.appendChild(treeEl);
+        const a = document.createElement('a');
+        a.href = '#';
+        a.textContent = item.label;
+        a.onclick = (e) => { e.preventDefault(); navigate(item.id); };
+        nav.appendChild(a);
+    });
+}
+
+function navigate(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('page-' + pageId);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+    const treeItem = document.querySelector(`.tree-item[onclick*="${pageId}"]`);
+    if (treeItem) treeItem.classList.add('active');
+    switch(pageId) {
+        case 'dashboard': refreshDashboard(); break;
+        case 'travel-data': refreshTravelData(); break;
+        case 'employee-master': refreshEmployeeMaster(); break;
+        case 'branch-master': refreshBranchMaster(); break;
+        case 'mode-master': refreshModeMaster(); break;
+        case 'fuel-master': refreshFuelMaster(); break;
+        case 'emission-factors': refreshEmissionFactors(); break;
+        case 'sustainability': refreshSustainability(); break;
+        case 'reports': refreshReports(); break;
+        case 'data-quality': refreshDataQuality(); break;
+        case 'user-management': refreshUserManagement(); break;
+    }
+}
+
+function toast(msg, type='info') {
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => { el.remove(); }, 3000);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    localStorage.setItem(STORAGE_KEYS.THEME, document.body.classList.contains('dark') ? 'dark' : 'light');
+    document.getElementById('themeBtn').textContent = document.body.classList.contains('dark') ? '☀️ Light' : '🌙 Dark';
+}
+
+function validateName(name) {
+    if (!name || name.trim().length === 0) return { valid: false, msg: 'Name is required.' };
+    if (name.trim().length < 3) return { valid: false, msg: 'Name must be at least 3 characters.' };
+    if (name.trim().length > 30) return { valid: false, msg: 'Name must be at most 30 characters.' };
+    if (!/^[A-Za-z\s]+$/.test(name.trim())) return { valid: false, msg: 'Name must contain only alphabets and spaces.' };
+    return { valid: true, value: name.trim().toUpperCase() };
+}
+
+function validateEmpId(empId) {
+    if (!empId || empId.trim().length === 0) return { valid: false, msg: 'Employee ID is required.' };
+    if (!/^\d+$/.test(empId.trim())) return { valid: false, msg: 'Employee ID must contain only numeric digits.' };
+    if (empId.trim().length > 5) return { valid: false, msg: 'Employee ID must be at most 5 characters.' };
+    if (!empId.trim().startsWith('75')) return { valid: false, msg: 'Employee ID Must start with the number "75".' };
+    return { valid: true, value: empId.trim() };
+}
+
+function validateDistance(dist) {
+    if (dist === null || dist === undefined || dist === '') return { valid: false, msg: 'Distance is required.' };
+    if (!Number.isInteger(dist)) return { valid: false, msg: 'Distance must be a whole number (no decimals).' };
+    if (dist <= 0) return { valid: false, msg: 'Distance must be greater than 0.' };
+    if (dist > 500) return { valid: false, msg: 'Distance exceeds maximum limit of 500 km.' };
+    return { valid: true, value: dist };
+}
+
+function getFuelOptionsForMode(mode) {
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    return fuels.filter(f => f.mode === mode).map(f => f.fuel);
+}
+
+function isValidFuelForMode(mode, fuel) {
+    const valid = getFuelOptionsForMode(mode);
+    if (mode === 'Walk' || mode === 'Cycle') return fuel === 'None' || fuel === '';
+    return valid.includes(fuel);
+}
+
+let travelChartInstances = {};
+
+function refreshTravelData() {
+    populateBranchDropdowns();
+    populateModeDropdown('travMode');
+    updateFuelOptions();
+    renderTravelTable();
+}
+
+function populateBranchDropdowns() {
+    const branches = loadData(STORAGE_KEYS.BRANCHES);
+    ['travBranch', 'empBranch', 'rptBranch', 'empFilterBranch'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">Select Branch</option>';
+        branches.forEach(b => { sel.innerHTML += `<option value="${b.id}">${b.name}</option>`; });
+        sel.value = current;
+    });
+    // Also populate report fuel dropdown based on selected mode
+    populateFuelDropdown('rptFuel');
+}
+
+function populateModeDropdown(selId) {
+    const modes = loadData(STORAGE_KEYS.MODES);
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select Mode</option>';
+    modes.forEach(m => { sel.innerHTML += `<option value="${m.name}">${m.name}</option>`; });
+}
+
+function populateFuelDropdown(selId) {
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">All Fuels</option>';
+    fuels.forEach(f => { sel.innerHTML += `<option value="${f.fuel}">${f.fuel}</option>`; });
+    sel.value = current;
+}
+
+function updateFuelOptions() {
+    const mode = document.getElementById('travMode').value;
+    const fuelSel = document.getElementById('travFuel');
+    const validFuels = getFuelOptionsForMode(mode);
+    fuelSel.innerHTML = '<option value="">Select Fuel (if applicable)</option>';
+    validFuels.forEach(f => { fuelSel.innerHTML += `<option value="${f}">${f}</option>`; });
+    if (mode === 'Walk' || mode === 'Cycle') { fuelSel.value = 'None'; }
+    else { fuelSel.value = ''; }
+}
+
+function clearTravelForm() {
+    ['travName', 'travEmpId', 'travBranch', 'travDept', 'travMode', 'travFuel', 'travDistance', 'travNotes'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('travelFormMsg').innerHTML = '';
+    ['travName', 'travEmpId', 'travBranch', 'travMode', 'travDistance'].forEach(id => {
+        document.getElementById(id).classList.remove('error');
+    });
+    updateFuelOptions();
+}
+
+function showTravelFieldError(fieldId, msg) {
+    document.getElementById(fieldId).classList.add('error');
+    const errEl = document.getElementById(fieldId).parentElement.querySelector('.field-error');
+    if (errEl) errEl.textContent = msg;
+}
+
+function saveTravelRecord() {
+    const name = document.getElementById('travName').value.trim();
+    const empId = document.getElementById('travEmpId').value.trim();
+    const branch = document.getElementById('travBranch').value;
+    const dept = document.getElementById('travDept').value;
+    const mode = document.getElementById('travMode').value;
+    const fuel = document.getElementById('travFuel').value;
+    const dist = document.getElementById('travDistance').value;
+    const notes = document.getElementById('travNotes').value.trim();
+    const msgEl = document.getElementById('travelFormMsg');
+    msgEl.innerHTML = '';
+    let hasError = false;
+
+    // Check 1: Staff Name is not empty
+    const nameVal = validateName(name);
+    if (!nameVal.valid) { showTravelFieldError('travName', nameVal.msg); hasError = true; }
+
+    // Check 2: Emp ID is not empty
+    const empIdVal = validateEmpId(empId);
+    if (!empIdVal.valid) { showTravelFieldError('travEmpId', empIdVal.msg); hasError = true; }
+
+    // Check 3: Emp ID does not already exist
+    if (empIdVal.valid) {
+        const existing = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.empId === empIdVal.value);
+        if (!existing) {
+            const dupTravel = loadData(STORAGE_KEYS.TRAVEL).find(t => t.empId === empIdVal.value);
+            if (dupTravel) { showTravelFieldError('travEmpId', 'Employee ID already exists in travel records.'); hasError = true; }
+        }
+    }
+
+    // Check 4: Branch is selected
+    if (!branch) { showTravelFieldError('travBranch', 'Please select a branch.'); hasError = true; }
+
+    // Check 5: Mode of Travel is selected
+    if (!mode) { showTravelFieldError('travMode', 'Please select a mode of travel.'); hasError = true; }
+
+    // Check 6: Fuel is valid for selected travel mode
+    if (mode && fuel && !isValidFuelForMode(mode, fuel)) {
+        showTravelFieldError('travFuel', `Invalid fuel "${fuel}" for mode "${mode}".`);
+        hasError = true;
+    }
+
+    // Check 7: Distance > 0
+    // Check 8: Distance is numeric
+    const distVal = validateDistance(dist);
+    if (!distVal.valid) { showTravelFieldError('travDistance', distVal.msg); hasError = true; }
+
+    if (hasError) return;
+
+    // Check 9: No duplicate employee record (warning only for name)
+    const dupName = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.name === nameVal.value);
+    if (dupName) {
+        toast('An employee with this name already exists. Please verify the Employee ID before saving.', 'info');
+    }
+
+    let empName = nameVal.value;
+    const emp = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.empId === empIdVal.value);
+    if (emp) empName = emp.name;
+
+    const record = {
+        id: 't' + Date.now(),
+        empId: empIdVal.value,
+        name: empName,
+        branch,
+        dept: dept || 'Unassigned',
+        mode,
+        fuel: fuel || 'Not Specified',
+        distance: distVal.value,
+        notes,
+        date: new Date().toISOString(),
+        status: 'Active'
+    };
+
+    loadData(STORAGE_KEYS.TRAVEL).push(record);
+    saveData(STORAGE_KEYS.TRAVEL, loadData(STORAGE_KEYS.TRAVEL));
+    msgEl.innerHTML = '<span style="color:var(--success);">✅ Record saved successfully!</span>';
+    clearTravelForm();
+    renderTravelTable();
+    toast('Travel record saved!', 'success');
+}
+
+function renderTravelTable() {
+    const search = document.getElementById('travSearch').value.toLowerCase();
+    let records = loadData(STORAGE_KEYS.TRAVEL).filter(r => r.status !== 'Deleted');
+    if (search) records = records.filter(r => r.name.toLowerCase().includes(search) || r.empId.includes(search));
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const tbody = document.querySelector('#travelTable tbody');
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px;">No travel records found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = records.map((r, i) => `
+        <tr>
+            <td><input type="checkbox" class="empChk" value="${r.id}" onchange="updateDeleteSelectedBtn()"></td><td>${i+1}</td><td>${esc(r.name.toUpperCase())}</td><td>${esc(r.empId)}</td>
+            <td>${getBranchName(r.branch)}</td><td>${esc(r.dept)}</td><td>${esc(r.mode)}</td>
+            <td>${esc(r.fuel)}</td><td>${r.distance}</td>
+            <td><span class="status-badge ${r.status === 'Active' ? 'status-active' : 'status-inactive'}">${r.status}</span></td>
+            <td class="action-cell">
+                <button class="btn btn-xs" onclick="viewTravelDetail('${r.id}')">👁️</button>
+                ${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteTravelRecord('${r.id}')">🗑️</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getBranchName(id) {
+    const b = loadData(STORAGE_KEYS.BRANCHES).find(x => x.id === id);
+    return b ? b.name : id;
+}
+
+function viewTravelDetail(id) {
+    const r = loadData(STORAGE_KEYS.TRAVEL).find(t => t.id === id);
+    if (!r) return;
+    document.getElementById('detailTitle').textContent = 'Travel Record Details';
+    document.getElementById('detailBody').innerHTML = `
+        <div class="form-row"><div class="form-group"><label>Name</label><input type="text" value="${esc(r.name)}" disabled></div>
+        <div class="form-group"><label>Employee ID</label><input type="text" value="${esc(r.empId)}" disabled></div></div>
+        <div class="form-row"><div class="form-group"><label>Branch</label><input type="text" value="${esc(getBranchName(r.branch))}" disabled></div>
+        <div class="form-group"><label>Department</label><input type="text" value="${esc(r.dept)}" disabled></div></div>
+        <div class="form-row"><div class="form-group"><label>Mode of Travel</label><input type="text" value="${esc(r.mode)}" disabled></div>
+        <div class="form-group"><label>Fuel Type</label><input type="text" value="${esc(r.fuel)}" disabled></div></div>
+        <div class="form-row"><div class="form-group"><label>Distance (km)</label><input type="text" value="${r.distance}" disabled></div>
+        <div class="form-group"><label>Notes</label><input type="text" value="${esc(r.notes)}" disabled></div></div>
+        <div class="form-group"><label>Date</label><input type="text" value="${new Date(r.date).toLocaleString()}" disabled></div>
+    `;
+    document.getElementById('detailModal').classList.add('show');
+}
+
+function deleteTravelRecord(id) {
+    if (!confirm('Deactivate this travel record? It will not be permanently deleted.')) return;
+    const records = loadData(STORAGE_KEYS.TRAVEL);
+    const r = records.find(t => t.id === id);
+    if (r) { r.status = 'Inactive'; saveData(STORAGE_KEYS.TRAVEL, records); }
+    renderTravelTable();
+    toast('Record deactivated.', 'info');
+}
+
+function exportTravelCSV() {
+    const records = loadData(STORAGE_KEYS.TRAVEL).filter(r => r.status !== 'Deleted');
+    const headers = ['S.No', 'Name', 'Employee ID', 'Branch', 'Department', 'Mode of Travel', 'Fuel Type', 'Distance (km)', 'Status', 'Notes', 'Date'];
+    const rows = records.map((r, i) => [i+1, r.name, r.empId, getBranchName(r.branch), r.dept, r.mode, r.fuel, r.distance, r.status, r.notes, new Date(r.date).toLocaleString()]);
+    downloadCSV(headers, rows, 'GreenCommute_Travel_Records.csv');
+}
+
+function refreshEmployeeMaster() {
+    populateBranchDropdowns();
+    renderEmployeeTable();
+}
+
+function checkNewDept() {
+    const sel = document.getElementById('empDept');
+    const newGroup = document.getElementById('newDeptGroup');
+    if (sel.value === '__new__') { newGroup.style.display = 'block'; }
+    else { newGroup.style.display = 'none'; }
+}
+
+function clearEmpForm() {
+    ['empName', 'empId', 'empBranch', 'empDept', 'empMobile', 'empStatus'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('empNewDept').value = '';
+    document.getElementById('newDeptGroup').style.display = 'none';
+    document.getElementById('empFormMsg').innerHTML = '';
+    ['empName', 'empId', 'empBranch'].forEach(id => {
+        document.getElementById(id).classList.remove('error');
+    });
+}
+
+let editEmpId = null;
+
+function saveEmployee() {
+    const name = document.getElementById('empName').value.trim();
+    const empId = document.getElementById('empId').value.trim();
+    const branch = document.getElementById('empBranch').value;
+    const deptSel = document.getElementById('empDept');
+    let dept = deptSel.value;
+    if (dept === '__new__') {
+        dept = document.getElementById('empNewDept').value.trim();
+        if (!dept) { document.getElementById('empDeptNewErr').style.display = 'block'; return; }
+    }
+    const mobile = document.getElementById('empMobile').value.trim();
+    const status = document.getElementById('empStatus').value;
+    const msgEl = document.getElementById('empFormMsg');
+    msgEl.innerHTML = '';
+    let hasError = false;
+
+    // Check 1: Staff Name is not empty
+    const nameVal = validateName(name);
+    if (!nameVal.valid) { document.getElementById('empName').classList.add('error'); hasError = true; }
+
+    // Check 2: Emp ID is not empty
+    const empIdVal = validateEmpId(empId);
+    if (!empIdVal.valid) { document.getElementById('empId').classList.add('error'); hasError = true; }
+
+    // Check 3: Emp ID does not already exist
+    if (empIdVal.valid) {
+        const existing = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.empId === empIdVal.value);
+        if (existing && existing.id !== editEmpId) {
+            document.getElementById('empId').classList.add('error');
+            msgEl.innerHTML = '<span style="color:var(--danger);">❌ This Employee ID already exists.</span>';
+            hasError = true;
+        }
+    }
+
+    // Check 4: Branch is selected
+    if (!branch) { document.getElementById('empBranch').classList.add('error'); hasError = true; }
+
+    if (hasError) return;
+
+    // Duplicate name warning
+    const dupName = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.name === nameVal.value && e.empId !== empIdVal.value);
+    if (dupName) {
+        toast('An employee with this name already exists. Please verify the Employee ID before saving.', 'info');
+    }
+
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    if (editEmpId) {
+        const idx = employees.findIndex(e => e.id === editEmpId);
+        if (idx >= 0) {
+            employees[idx].name = nameVal.value;
+            employees[idx].empId = empIdVal.value;
+            employees[idx].dept = dept;
+            employees[idx].branch = branch;
+            employees[idx].mobile = mobile;
+            employees[idx].status = status;
+        }
+        msgEl.innerHTML = '<span style="color:var(--success);">✅ Employee updated successfully!</span>';
+        editEmpId = null;
+        document.getElementById('empId').disabled = false;
+    } else {
+        // Check 9: No duplicate employee record
+        const dup = employees.find(e => e.empId === empIdVal.value);
+        if (dup) {
+            msgEl.innerHTML = '<span style="color:var(--danger);">❌ Duplicate Employee ID.</span>';
+            return;
+        }
+        employees.push({
+            id: 'e' + Date.now(),
+            name: nameVal.value,
+            empId: empIdVal.value,
+            branch,
+            dept,
+            mobile,
+            status,
+            created: new Date().toISOString()
+        });
+        msgEl.innerHTML = '<span style="color:var(--success);">✅ Employee added successfully!</span>';
+    }
+    saveData(STORAGE_KEYS.EMPLOYEES, employees);
+    clearEmpForm();
+    renderEmployeeTable();
+    toast('Employee saved!', 'success');
+}
+
+function renderEmployeeTable() {
+    const search = document.getElementById('empSearch').value.toLowerCase();
+    const branchFilter = document.getElementById('empFilterBranch').value;
+    const idFilter = document.getElementById('empFilterId').value;
+    // Populate the Employee ID dropdown
+    const idDropdown = document.getElementById('empFilterId');
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const currentIdVal = idDropdown.value;
+    idDropdown.innerHTML = '<option value="">All Employee IDs</option>';
+    employees.forEach(e => {
+        if (!idDropdown.querySelector('option[value="' + e.empId + '"]')) {
+            idDropdown.innerHTML += '<option value="' + e.empId + '">' + e.empId + ' - ' + e.name + '</option>';
+        }
+    });
+    idDropdown.value = currentIdVal;
+
+    let records = employees;
+    if (search) records = records.filter(r => r.name.toLowerCase().includes(search) || r.empId.includes(search));
+    if (branchFilter) records = records.filter(r => r.branch === branchFilter);
+    if (idFilter) records = records.filter(r => r.empId === idFilter);
+    records.sort((a, b) => a.name.localeCompare(b.name));
+    const tbody = document.querySelector('#empTable tbody');
+    if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No employees found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = records.map((r, i) => `
+        <tr>
+            <td><input type="checkbox" class="empChk" value="${r.id}" onchange="updateDeleteSelectedBtn()"></td><td>${i+1}</td><td>${esc(r.name.toUpperCase())}</td><td>${esc(r.empId)}</td>
+            <td>${getBranchName(r.branch)}</td><td>${esc(r.dept)}</td><td>${esc(r.mobile)}</td>
+            <td><span class="status-badge ${r.status === 'Active' ? 'status-active' : 'status-inactive'}">${r.status}</span></td>
+            <td class="action-cell">
+                <button class="btn btn-xs" onclick="editEmployee('${r.id}')">✏️</button>
+                ${isAdmin() ? `<button class="btn btn-xs" onclick="toggleEmpStatus('${r.id}')">🔄</button>` : ''}
+                <button class="btn btn-xs" onclick="viewEmpDetail('${r.id}')">👁️</button>
+                ${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteEmployee('${r.id}')">🗑️</button>` : ''}
+                ${isAdmin() ? `<button class="btn btn-xs btn-danger" style="margin-left:4px;" onclick="deleteSingleEmployee('${r.id}','${esc(r.name)}','${esc(r.empId)}')" title="Delete this record">✖</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAllChk');
+    const checkboxes = document.querySelectorAll('.empChk');
+    checkboxes.forEach(chk => { chk.checked = selectAll.checked; });
+    updateDeleteSelectedBtn();
+}
+
+function updateDeleteSelectedBtn() {
+    const selected = document.querySelectorAll('.empChk:checked');
+    const btn = document.getElementById('deleteSelectedBtn');
+    if (btn) {
+        btn.style.display = selected.length > 0 ? 'inline-flex' : 'none';
+        btn.textContent = '🗑️ Delete ' + selected.length + ' Selected';
+    }
+}
+
+function deleteSelectedEmployees() {
+    if (!confirm('Delete ' + document.querySelectorAll('.empChk:checked').length + ' selected employee record(s)? This cannot be undone.')) return;
+    const selectedIds = [];
+    document.querySelectorAll('.empChk:checked').forEach(chk => { selectedIds.push(chk.value); });
+    if (selectedIds.length === 0) { toast('No employees selected.', 'warning'); return; }
+    let employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const deletedNames = [];
+    employees = employees.filter(e => {
+        if (selectedIds.includes(e.id)) { deletedNames.push(e.name + ' (' + e.empId + ')'); return false; }
+        return true;
+    });
+    saveData(STORAGE_KEYS.EMPLOYEES, employees);
+    renderEmployeeTable();
+    if (deletedNames.length > 0) toast('Deleted: ' + deletedNames.join(', '), 'info');
+}
+
+function deleteSingleEmployee(id, name, empId) {
+    if (!confirm('Delete employee ' + name + ' (' + empId + ')? This cannot be undone.')) return;
+    let employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    employees = employees.filter(e => e.id !== id);
+    saveData(STORAGE_KEYS.EMPLOYEES, employees);
+    renderEmployeeTable();
+    toast(name + ' (' + empId + ') deleted.', 'info');
+}
+
+function editEmployee(id) {
+    const emp = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.id === id);
+    if (!emp) return;
+    editEmpId = id;
+    document.getElementById('empName').value = emp.name;
+    document.getElementById('empId').value = emp.empId;
+    document.getElementById('empBranch').value = emp.branch;
+    document.getElementById('empMobile').value = emp.mobile || '';
+    document.getElementById('empStatus').value = emp.status;
+    document.getElementById('empFormMsg').innerHTML = '<span style="color:var(--primary);">✏️ Editing employee.</span>';
+    document.getElementById('empId').disabled = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleEmpStatus(id) {
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const emp = employees.find(e => e.id === id);
+    if (emp) {
+        emp.status = emp.status === 'Active' ? 'Inactive' : 'Active';
+        saveData(STORAGE_KEYS.EMPLOYEES, employees);
+        renderEmployeeTable();
+        toast(`Employee ${emp.status === 'Active' ? 'activated' : 'deactivated'}.`, 'info');
+    }
+}
+
+function viewEmpDetail(id) {
+    const emp = loadData(STORAGE_KEYS.EMPLOYEES).find(e => e.id === id);
+    if (!emp) return;
+    document.getElementById('detailTitle').textContent = 'Employee Details';
+    document.getElementById('detailBody').innerHTML = `
+        <div class="form-row"><div class="form-group"><label>Name</label><input type="text" value="${esc(emp.name)}" disabled></div>
+        <div class="form-group"><label>Employee ID</label><input type="text" value="${esc(emp.empId)}" disabled></div></div>
+        <div class="form-row"><div class="form-group"><label>Branch</label><input type="text" value="${esc(getBranchName(emp.branch))}" disabled></div>
+        <div class="form-group"><label>Department</label><input type="text" value="${esc(emp.dept)}" disabled></div></div>
+        <div class="form-row"><div class="form-group"><label>Mobile</label><input type="text" value="${esc(emp.mobile)}" disabled></div>
+        <div class="form-group"><label>Status</label><input type="text" value="${emp.status}" disabled></div></div>
+        <div class="form-group"><label>Created</label><input type="text" value="${emp.created ? new Date(emp.created).toLocaleString() : 'N/A'}" disabled></div>
+    `;
+    document.getElementById('detailModal').classList.add('show');
+}
+
+function exportEmployeeCSV() {
+    const records = loadData(STORAGE_KEYS.EMPLOYEES);
+    const headers = ['S.No', 'Name', 'Employee ID', 'Branch', 'Department', 'Mobile', 'Status'];
+    const rows = records.map((r, i) => [i+1, r.name, r.empId, getBranchName(r.branch), r.dept, r.mobile, r.status]);
+    downloadCSV(headers, rows, 'GreenCommute_Employee_Master.csv');
+}
+
+function deleteEmployee(id) {
+    if (!confirm('Delete this employee record? This action cannot be undone.')) return;
+    let employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const emp = employees.find(e => e.id === id);
+    if (emp) {
+        employees = employees.filter(e => e.id !== id);
+        saveData(STORAGE_KEYS.EMPLOYEES, employees);
+        renderEmployeeTable();
+        toast(`🗑️ ${emp.name} (${emp.empId}) deleted.`, 'info');
+    }
+}
+
+function importEmployeeCSV(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r\n|\n/).filter(l => l.trim() !== '');
+        if (lines.length < 2) { toast('CSV file is empty or has no data rows.', 'error'); return; }
+
+        // Parse header
+        const header = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+        // Find column indices
+        const colIndex = {};
+        header.forEach((h, i) => { colIndex[h.toLowerCase()] = i; });
+
+        const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+        const branches = loadData(STORAGE_KEYS.BRANCHES);
+        const branchNameToId = {};
+        branches.forEach(b => { branchNameToId[b.name.toLowerCase()] = b.id; });
+
+        let imported = 0;
+        let skipped = 0;
+        const errors = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            if (cols.length === 0 || (cols.length === 1 && cols[0] === '')) continue;
+
+            const name = cols[colIndex['name']] || cols[colIndex['employee name']] || '';
+            const empId = cols[colIndex['employee id']] || cols[colIndex['emp id']] || cols[colIndex['parc id']] || '';
+            let branch = cols[colIndex['branch']] || '';
+            const dept = cols[colIndex['department']] || cols[colIndex['dept']] || '';
+            const mobile = cols[colIndex['mobile']] || cols[colIndex['mobile nr']] || cols[colIndex['mobile number']] || '';
+            const status = cols[colIndex['status']] || 'Active';
+
+            if (!name || !empId) { skipped++; errors.push(`Row ${i+1}: Missing name or Employee ID.`); continue; }
+
+            // Validate Emp ID format
+            if (!/^\d{1,5}$/.test(empId) || !empId.startsWith('75')) {
+                skipped++; errors.push(`Row ${i+1}: Invalid Employee ID "${empId}". Must be numeric, max 5 digits, start with 75.`);
+                continue;
+            }
+
+            // Resolve branch
+            const branchId = branchNameToId[branch.toLowerCase()] || branches.find(b => b.name === branch)?.id;
+            if (!branchId) {
+                skipped++; errors.push(`Row ${i+1}: Branch "${branch}" not found in master list.`);
+                continue;
+            }
+
+            // Check duplicate Emp ID
+            if (employees.find(e => e.empId === empId)) {
+                skipped++; errors.push(`Row ${i+1}: Employee ID "${empId}" already exists.`);
+                continue;
+            }
+
+            employees.push({
+                id: 'e' + Date.now() + '_' + i,
+                name: name.toUpperCase(),
+                empId: empId,
+                branch: branchId,
+                dept: dept || 'Unassigned',
+                mobile: mobile,
+                status: status,
+                created: new Date().toISOString()
+            });
+            imported++;
+        }
+
+        saveData(STORAGE_KEYS.EMPLOYEES, employees);
+        renderEmployeeTable();
+        populateBranchDropdowns();
+
+        let msg = `✅ Import complete: ${imported} record(s) imported.`;
+        if (skipped > 0) msg += ` ⚠️ ${skipped} row(s) skipped.`;
+        if (errors.length > 0 && errors.length <= 5) {
+            msg += '<br><small style="color:var(--danger);">' + errors.join('<br>') + '</small>';
+        } else if (errors.length > 5) {
+            msg += `<br><small style="color:var(--danger);">First 5 errors:<br>${errors.slice(0,5).join('<br>')}</small>`;
+        }
+        document.getElementById('empFormMsg').innerHTML = msg;
+        toast(`${imported} employees imported!`, imported > 0 ? 'success' : 'error');
+        fileInput.value = '';
+    };
+    reader.readAsText(file);
+}
+
+function refreshBranchMaster() { renderBranchTable(); }
+
+function clearBranchForm() { document.getElementById('branchName').value = ''; document.getElementById('branchFormMsg').innerHTML = ''; }
+
+function saveBranch() {
+    const name = document.getElementById('branchName').value.trim();
+    const msgEl = document.getElementById('branchFormMsg');
+    msgEl.innerHTML = '';
+    if (!name) { document.getElementById('branchName').classList.add('error'); return; }
+    const branches = loadData(STORAGE_KEYS.BRANCHES);
+    if (branches.find(b => b.name.toLowerCase() === name.toLowerCase())) {
+        msgEl.innerHTML = '<span style="color:var(--danger);">❌ Branch already exists.</span>';
+        return;
+    }
+    branches.push({ id: 'b' + Date.now(), name });
+    saveData(STORAGE_KEYS.BRANCHES, branches);
+    msgEl.innerHTML = '<span style="color:var(--success);">✅ Branch added!</span>';
+    clearBranchForm();
+    renderBranchTable();
+    populateBranchDropdowns();
+    toast('Branch added!', 'success');
+}
+
+function renderBranchTable() {
+    const branches = loadData(STORAGE_KEYS.BRANCHES);
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const tbody = document.querySelector('#branchTable tbody');
+    tbody.innerHTML = branches.map((b, i) => {
+        const count = employees.filter(e => e.branch === b.id).length;
+        return `<tr>
+            <td>${i+1}</td><td>${esc(b.name)}</td><td>${count}</td>
+            <td class="action-cell">${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteBranch('${b.id}')">🗑️</button>` : ''}</td>
+        </tr>`;
+    }).join('');
+}
+
+function deleteBranch(id) {
+    if (!confirm('Remove this branch? Employees assigned to it will become unassigned.')) return;
+    let branches = loadData(STORAGE_KEYS.BRANCHES);
+    branches = branches.filter(b => b.id !== id);
+    saveData(STORAGE_KEYS.BRANCHES, branches);
+    renderBranchTable();
+    populateBranchDropdowns();
+    toast('Branch removed.', 'info');
+}
+
+function clearAllBranches() {
+    if (!confirm('Remove ALL branches? This cannot be undone.')) return;
+    saveData(STORAGE_KEYS.BRANCHES, []);
+    renderBranchTable();
+    populateBranchDropdowns();
+    toast('All branches cleared.', 'warning');
+}
+
+function refreshModeMaster() { renderModeTable(); }
+
+function clearModeForm() { document.getElementById('modeName').value = ''; document.getElementById('modeFormMsg').innerHTML = ''; }
+
+function saveTravelMode() {
+    const name = document.getElementById('modeName').value.trim();
+    const msgEl = document.getElementById('modeFormMsg');
+    msgEl.innerHTML = '';
+    if (!name) { document.getElementById('modeName').classList.add('error'); return; }
+    const modes = loadData(STORAGE_KEYS.MODES);
+    if (modes.find(m => m.name.toLowerCase() === name.toLowerCase())) {
+        msgEl.innerHTML = '<span style="color:var(--danger);">❌ Mode already exists.</span>';
+        return;
+    }
+    modes.push({ id: 'm' + Date.now(), name });
+    saveData(STORAGE_KEYS.MODES, modes);
+    msgEl.innerHTML = '<span style="color:var(--success);">✅ Mode added!</span>';
+    clearModeForm();
+    renderModeTable();
+    populateModeDropdown('travMode');
+    populateModeDropdown('rptMode');
+    populateFuelDropdown('rptFuel');
+    toast('Travel mode added!', 'success');
+}
+
+function renderModeTable() {
+    const modes = loadData(STORAGE_KEYS.MODES);
+    const tbody = document.querySelector('#modeTable tbody');
+    tbody.innerHTML = modes.map((m, i) => `<tr>
+        <td>${i+1}</td><td>${esc(m.name)}</td>
+        <td class="action-cell">${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteMode('${m.id}')">🗑️</button>` : ''}</td>
+    </tr>`).join('');
+}
+
+function deleteMode(id) {
+    if (!confirm('Remove this travel mode?')) return;
+    let modes = loadData(STORAGE_KEYS.MODES);
+    modes = modes.filter(m => m.id !== id);
+    let fuels = loadData(STORAGE_KEYS.FUELS);
+    fuels = fuels.filter(f => modes.find(m => m.name === f.mode));
+    saveData(STORAGE_KEYS.MODES, modes);
+    saveData(STORAGE_KEYS.FUELS, fuels);
+    renderModeTable();
+    populateModeDropdown('travMode');
+    toast('Mode removed.', 'info');
+}
+
+function clearAllModes() {
+    if (!confirm('Remove ALL travel modes?')) return;
+    saveData(STORAGE_KEYS.MODES, []);
+    saveData(STORAGE_KEYS.FUELS, []);
+    renderModeTable();
+    populateModeDropdown('travMode');
+    toast('All modes cleared.', 'warning');
+}
+
+function refreshFuelMaster() {
+    populateModeDropdown('fuelMode');
+    renderFuelTable();
+}
+
+function clearFuelForm() { document.getElementById('fuelMode').value = ''; document.getElementById('fuelType').value = ''; document.getElementById('fuelFormMsg').innerHTML = ''; }
+
+function saveFuelType() {
+    const mode = document.getElementById('fuelMode').value;
+    const fuel = document.getElementById('fuelType').value.trim();
+    const msgEl = document.getElementById('fuelFormMsg');
+    msgEl.innerHTML = '';
+    if (!mode) { document.getElementById('fuelMode').classList.add('error'); return; }
+    if (!fuel) { document.getElementById('fuelType').classList.add('error'); return; }
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    if (fuels.find(f => f.mode === mode && f.fuel.toLowerCase() === fuel.toLowerCase())) {
+        msgEl.innerHTML = '<span style="color:var(--danger);">❌ Fuel type already exists for this mode.</span>';
+        return;
+    }
+    fuels.push({ id: 'f' + Date.now(), mode, fuel });
+    saveData(STORAGE_KEYS.FUELS, fuels);
+    msgEl.innerHTML = '<span style="color:var(--success);">✅ Fuel type added!</span>';
+    clearFuelForm();
+    renderFuelTable();
+    updateFuelOptions();
+    populateFuelDropdown('rptFuel');
+    toast('Fuel type added!', 'success');
+}
+
+function renderFuelTable() {
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    const tbody = document.querySelector('#fuelTable tbody');
+    tbody.innerHTML = fuels.map((f, i) => `<tr>
+        <td>${i+1}</td><td>${esc(f.mode)}</td><td>${esc(f.fuel)}</td>
+        <td class="action-cell">${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteFuel('${f.id}')">🗑️</button>` : ''}</td>
+    </tr>`).join('');
+}
+
+function deleteFuel(id) {
+    if (!confirm('Remove this fuel type?')) return;
+    let fuels = loadData(STORAGE_KEYS.FUELS);
+    fuels = fuels.filter(f => f.id !== id);
+    saveData(STORAGE_KEYS.FUELS, fuels);
+    renderFuelTable();
+    updateFuelOptions();
+    populateFuelDropdown('rptFuel');
+    toast('Fuel type removed.', 'info');
+}
+
+function clearAllFuels() {
+    if (!confirm('Remove ALL fuel types?')) return;
+    saveData(STORAGE_KEYS.FUELS, []);
+    renderFuelTable();
+    updateFuelOptions();
+    toast('All fuel types cleared.', 'warning');
+}
+
+function refreshEmissionFactors() {
+    populateFactorDropdowns();
+    renderFactorTable();
+}
+
+function populateFactorDropdowns() {
+    const modes = loadData(STORAGE_KEYS.MODES);
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    const typeSel = document.getElementById('factorType');
+    const fuelSel = document.getElementById('factorFuel');
+    typeSel.innerHTML = '<option value="">Select Type</option>';
+    modes.forEach(m => { typeSel.innerHTML += `<option value="${m.name}">${m.name}</option>`; });
+    fuelSel.innerHTML = '<option value="">Select Fuel</option>';
+    fuels.forEach(f => { fuelSel.innerHTML += `<option value="${f.fuel}">${f.fuel} (${f.mode})</option>`; });
+    typeSel.onchange = function() {
+        const mode = this.value;
+        const validFuels = getFuelOptionsForMode(mode);
+        fuelSel.innerHTML = '<option value="">Select Fuel</option>';
+        validFuels.forEach(f => { fuelSel.innerHTML += `<option value="${f}">${f}</option>`; });
+    };
+}
+
+function clearFactorForm() {
+    ['factorType', 'factorFuel', 'factorEconomy', 'factorEmit'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('factorFormMsg').innerHTML = '';
+}
+
+function saveEmissionFactor() {
+    const vehicleType = document.getElementById('factorType').value;
+    const fuelType = document.getElementById('factorFuel').value;
+    const economy = parseFloat(document.getElementById('factorEconomy').value);
+    const emitFactor = parseFloat(document.getElementById('factorEmit').value);
+    const unit = document.getElementById('factorUnit').value;
+    const emitUnit = document.getElementById('factorEmitUnit').value;
+    const msgEl = document.getElementById('factorFormMsg');
+    msgEl.innerHTML = '';
+    if (!vehicleType) { toast('Select a vehicle type.', 'error'); return; }
+    if (!fuelType) { toast('Select a fuel type.', 'error'); return; }
+    if (!economy || economy <= 0) { toast('Fuel economy must be greater than 0.', 'error'); return; }
+    if (!emitFactor || emitFactor < 0) { toast('Emission factor must be 0 or greater.', 'error'); return; }
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    const existing = factors.find(f => f.vehicleType === vehicleType && f.fuelType === fuelType);
+    if (existing) {
+        existing.economy = economy;
+        existing.emissionFactor = emitFactor;
+        existing.unit = unit;
+        existing.emitUnit = emitUnit;
+        msgEl.innerHTML = '<span style="color:var(--success);">✅ Factor updated!</span>';
+    } else {
+        factors.push({ id: 'ef' + Date.now(), vehicleType, fuelType, economy, unit, emissionFactor: emitFactor, emitUnit });
+        msgEl.innerHTML = '<span style="color:var(--success);">✅ Factor added!</span>';
+    }
+    saveData(STORAGE_KEYS.FACTORS, factors);
+    clearFactorForm();
+    renderFactorTable();
+    toast('Emission factor saved!', 'success');
+}
+
+function renderFactorTable() {
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    const tbody = document.querySelector('#factorTable tbody');
+    tbody.innerHTML = factors.map((f, i) => `<tr>
+        <td>${i+1}</td><td>${esc(f.vehicleType)}</td><td>${esc(f.fuelType)}</td>
+        <td>${f.economy}</td><td>${esc(f.unit)}</td><td>${f.emissionFactor}</td><td>${esc(f.emitUnit)}</td>
+        <td class="action-cell">${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteFactor('${f.id}')">🗑️</button>` : ''}</td>
+    </tr>`).join('');
+}
+
+function deleteFactor(id) {
+    if (!confirm('Remove this emission factor?')) return;
+    let factors = loadData(STORAGE_KEYS.FACTORS);
+    factors = factors.filter(f => f.id !== id);
+    saveData(STORAGE_KEYS.FACTORS, factors);
+    renderFactorTable();
+    toast('Factor removed.', 'info');
+}
+
+function exportFactorsCSV() {
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    const headers = ['Vehicle Type', 'Fuel Type', 'Fuel Economy', 'Unit', 'Emission Factor', 'Emission Factor Unit'];
+    const rows = factors.map(f => [f.vehicleType, f.fuelType, f.economy, f.unit, f.emissionFactor, f.emitUnit]);
+    downloadCSV(headers, rows, 'GreenCommute_Emission_Factors.csv');
+}
+
+const WORKING_DAYS = 250;
+
+function getEmissionFactor(vehicleType, fuelType) {
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    return factors.find(f => f.vehicleType === vehicleType && f.fuelType === fuelType);
+}
+
+function calculateSustainability() {
+    const travelRecords = loadData(STORAGE_KEYS.TRAVEL).filter(r => r.status === 'Active');
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES).filter(e => e.status === 'Active');
+    const totalEmployees = employees.length;
+
+    const modeCounts = {};
+    travelRecords.forEach(r => { modeCounts[r.mode] = (modeCounts[r.mode] || 0) + 1; });
+
+    let totalDailyDistance = 0;
+    travelRecords.forEach(r => { totalDailyDistance += r.distance; });
+
+    const avgDailyDistance = totalEmployees > 0 ? totalDailyDistance / totalEmployees : 0;
+    const totalMonthlyDistance = totalDailyDistance * 22;
+    const totalAnnualDistance = totalDailyDistance * WORKING_DAYS;  // Annual distance calculation
+
+    let totalFuelConsumption = 0;  // Fuel consumption calculation
+    let totalCO2 = 0;               // CO₂ calculation
+
+    travelRecords.forEach(r => {
+        const factor = getEmissionFactor(r.mode, r.fuel);
+        if (factor) {
+            const fuelUsed = r.distance / factor.economy;
+            totalFuelConsumption += fuelUsed;
+            totalCO2 += fuelUsed * factor.emissionFactor;
+        } else {
+            const fuelFactor = loadData(STORAGE_KEYS.FACTORS).find(f => f.fuelType === r.fuel);
+            if (fuelFactor) {
+                const fuelUsed = r.distance / fuelFactor.economy;
+                totalFuelConsumption += fuelUsed;
+                totalCO2 += fuelUsed * fuelFactor.emissionFactor;
+            }
+        }
+    });
+
+    const co2PerEmployee = totalEmployees > 0 ? totalCO2 / totalEmployees : 0;
+
+    return {
+        totalEmployees,
+        modeCounts,
+        totalDailyDistance,
+        avgDailyDistance,
+        totalMonthlyDistance,
+        totalAnnualDistance,
+        totalFuelConsumption,
+        totalCO2,
+        co2PerEmployee,
+        travelRecords
+    };
+}
+
+function refreshDashboard() {
+    const s = calculateSustainability();
+    const kpis = document.getElementById('kpiGrid');
+    kpis.innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Total Employees</div><div class="kpi-value">${s.totalEmployees}</div><div class="kpi-sub">Active employees</div></div>
+        <div class="kpi-card"><div class="kpi-label">Mode of Vehicles Used</div><div class="kpi-value">${Object.keys(s.modeCounts).length}</div><div class="kpi-sub">Different travel modes</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Average Daily Distance per Employee</div><div class="kpi-value">${s.avgDailyDistance.toFixed(1)}<span class="kpi-unit">km</span></div><div class="kpi-sub">Per active employee</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Total Monthly Distance</div><div class="kpi-value">${s.totalMonthlyDistance.toFixed(0)}<span class="kpi-unit">km</span></div><div class="kpi-sub">~22 working days/month</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Total Annual Distance</div><div class="kpi-value">${s.totalAnnualDistance.toFixed(0)}<span class="kpi-unit">km</span></div><div class="kpi-sub">Based on Working Days = 250</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Estimated Annual Fuel Consumption</div><div class="kpi-value">${s.totalFuelConsumption.toFixed(1)}</div><div class="kpi-sub">Units per year</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Estimated Annual CO₂ Emissions</div><div class="kpi-value">${s.totalCO2.toFixed(1)}<span class="kpi-unit">kg</span></div><div class="kpi-sub">Carbon footprint</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">CO₂ Emissions per Employee</div><div class="kpi-value">${s.co2PerEmployee.toFixed(2)}<span class="kpi-unit">kg</span></div><div class="kpi-sub">Annual per employee</div></div>
+    `;
+    refreshDashboardCharts();
+    refreshDQSummary();
+}
+
+function refreshDQSummary() {
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const dq = document.getElementById('dqSummary');
+    const total = employees.length;
+    const complete = employees.filter(e => e.name && e.empId && e.branch && e.dept && e.mobile).length;
+    const missing = total - complete;
+    const inactive = employees.filter(e => e.status === 'Inactive').length;
+    const dupAttempts = loadData(STORAGE_KEYS.DUPLICATE_ATTEMPTS).length;
+    dq.innerHTML = `
+        <div class="dq-item success"><div class="dq-value">${total}</div><div class="dq-label">Total records</div></div>
+        <div class="dq-item success"><div class="dq-value">${complete}</div><div class="dq-label">Complete records</div></div>
+        <div class="dq-item warn"><div class="dq-value">${missing}</div><div class="dq-label">Missing information</div></div>
+        <div class="dq-item warn"><div class="dq-value">${dupAttempts}</div><div class="dq-label">Duplicate attempts</div></div>
+        <div class="dq-item"><div class="dq-value">${inactive}</div><div class="dq-label">Inactive employees</div></div>
+    `;
+}
+
+function refreshDashboardCharts() {
+    const s = calculateSustainability();
+    const container = document.getElementById('dashboardCharts');
+    container.innerHTML = `
+        <div class="chart-card"><h4>Employees by Mode of Travel</h4><canvas id="chart1"></canvas></div>
+        <div class="chart-card"><h4>Employees by Fuel Type</h4><canvas id="chart2"></canvas></div>
+        <div class="chart-card"><h4>Annual Distance by Travel Mode</h4><canvas id="chart4"></canvas></div>
+        <div class="chart-card"><h4>Estimated CO₂ Emissions by Fuel Type</h4><canvas id="chart5"></canvas></div>
+    `;
+    Object.values(travelChartInstances).forEach(c => c.destroy());
+    travelChartInstances = {};
+
+    const modeLabels = Object.keys(s.modeCounts);
+    const modeData = Object.values(s.modeCounts);
+    travelChartInstances.chart1 = new Chart(document.getElementById('chart1'), {
+        type: 'doughnut',
+        data: { labels: modeLabels, datasets: [{ data: modeData, backgroundColor: ['#1a56db', '#059669', '#d97706', '#dc2626', '#6b7280', '#7c3aed'] }] },
+        options: { responsive: true, maintainAspectRatio: true }
+    });
+
+    const fuelCounts = {};
+    s.travelRecords.forEach(r => { fuelCounts[r.fuel] = (fuelCounts[r.fuel] || 0) + 1; });
+    const fuelLabels = Object.keys(fuelCounts);
+    const fuelData = Object.values(fuelCounts);
+    travelChartInstances.chart2 = new Chart(document.getElementById('chart2'), {
+        type: 'doughnut',
+        data: { labels: fuelLabels, datasets: [{ data: fuelData, backgroundColor: ['#059669', '#d97706', '#1a56db', '#dc2626', '#6b7280', '#7c3aed', '#db2777'] }] },
+        options: { responsive: true, maintainAspectRatio: true }
+    });
+
+    const distByMode = {};
+    s.travelRecords.forEach(r => { distByMode[r.mode] = (distByMode[r.mode] || 0) + r.distance * WORKING_DAYS; });
+    const distModeLabels = Object.keys(distByMode);
+    const distModeData = Object.values(distByMode);
+    travelChartInstances.chart4 = new Chart(document.getElementById('chart4'), {
+        type: 'bar',
+        data: { labels: distModeLabels, datasets: [{ data: distModeData, backgroundColor: '#1a56db', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    const co2ByFuel = {};
+    s.travelRecords.forEach(r => {
+        const factor = getEmissionFactor(r.mode, r.fuel);
+        if (factor) {
+            const fuelUsed = r.distance / factor.economy;
+            co2ByFuel[r.fuel] = (co2ByFuel[r.fuel] || 0) + fuelUsed * factor.emissionFactor * WORKING_DAYS;
+        }
+    });
+    const co2FuelLabels = Object.keys(co2ByFuel);
+    const co2FuelData = Object.values(co2ByFuel);
+    travelChartInstances.chart5 = new Chart(document.getElementById('chart5'), {
+        type: 'bar',
+        data: { labels: co2FuelLabels, datasets: [{ data: co2FuelData, backgroundColor: '#d97706', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+    });
+}
+
+function refreshSustainability() {
+    const s = calculateSustainability();
+    const kpis = document.getElementById('sustKPIs');
+    kpis.innerHTML = `
+        <div class="kpi-card green"><div class="kpi-label">Total Annual Distance</div><div class="kpi-value">${s.totalAnnualDistance.toFixed(0)}<span class="kpi-unit">km</span></div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Estimated Annual Fuel Consumption</div><div class="kpi-value">${s.totalFuelConsumption.toFixed(1)}</div><div class="kpi-sub">Total units per year</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Estimated Annual CO₂ Emissions</div><div class="kpi-value">${s.totalCO2.toFixed(1)}<span class="kpi-unit">kg</span></div><div class="kpi-sub">Total carbon footprint</div></div>
+        <div class="kpi-card"><div class="kpi-label">CO₂ per Employee</div><div class="kpi-value">${s.co2PerEmployee.toFixed(2)}<span class="kpi-unit">kg</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Avg Daily Distance</div><div class="kpi-value">${s.avgDailyDistance.toFixed(1)}<span class="kpi-unit">km</span></div></div>
+        <div class="kpi-card green"><div class="kpi-label">Active Employees</div><div class="kpi-value">${s.totalEmployees}</div></div>
+    `;
+    refreshSustainabilityCharts();
+    renderReductionTable();
+}
+
+function refreshSustainabilityCharts() {
+    const s = calculateSustainability();
+    const container = document.getElementById('sustCharts');
+    container.innerHTML = `
+        <div class="chart-card"><h4>Estimated CO₂ Emissions by Branch</h4><canvas id="chart6"></canvas></div>
+        <div class="chart-card"><h4>Potential CO₂ Reduction by Sustainability Initiative</h4><canvas id="chart7"></canvas></div>
+    `;
+    Object.values(travelChartInstances).forEach(c => c.destroy());
+    travelChartInstances = {};
+
+    const co2ByBranch = {};
+    s.travelRecords.forEach(r => {
+        const factor = getEmissionFactor(r.mode, r.fuel);
+        if (factor) {
+            const fuelUsed = r.distance / factor.economy;
+            const co2 = fuelUsed * factor.emissionFactor * WORKING_DAYS;
+            co2ByBranch[getBranchName(r.branch)] = (co2ByBranch[getBranchName(r.branch)] || 0) + co2;
+        }
+    });
+    const branchLabels = Object.keys(co2ByBranch);
+    const branchData = Object.values(co2ByBranch);
+    travelChartInstances.chart6 = new Chart(document.getElementById('chart6'), {
+        type: 'bar',
+        data: { labels: branchLabels, datasets: [{ data: branchData, backgroundColor: '#059669', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    const reductions = loadData(STORAGE_KEYS.REDUCTIONS).filter(r => r.status !== 'Completed');
+    const redLabels = reductions.map(r => r.name);
+    const redData = reductions.map(r => r.reduction);
+    travelChartInstances.chart7 = new Chart(document.getElementById('chart7'), {
+        type: 'bar',
+        data: { labels: redLabels, datasets: [{ data: redData, backgroundColor: '#1a56db', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+    });
+}
+
+function renderReductionTable() {
+    const reductions = loadData(STORAGE_KEYS.REDUCTIONS);
+    const totalPotential = reductions.filter(r => r.status !== 'Completed').reduce((sum, r) => sum + r.reduction, 0);
+    const tbody = document.querySelector('#reductionTable tbody');
+    tbody.innerHTML = reductions.map((r, i) => `
+        <tr>
+            <td>${i+1}</td><td>${esc(r.name)}</td><td>${esc(r.mode)}</td>
+            <td>${r.reduction.toLocaleString()} kg</td>
+            <td><span class="status-badge ${r.status === 'Active' || r.status === 'Completed' ? 'status-active' : 'status-inactive'}">${r.status}</span></td>
+            <td class="action-cell">${isAdmin() ? `<button class="btn btn-xs btn-danger" onclick="deleteReduction('${r.id}')">🗑️</button>` : ''}</td>
+        </tr>
+    `).join('');
+    const totalRow = document.createElement('tr');
+    totalRow.innerHTML = `<td colspan="3" style="text-align:right;font-weight:700;">Total Potential Reduction</td><td style="font-weight:700;color:var(--success);">${totalPotential.toLocaleString()} kg CO₂/year</td><td colspan="2"></td>`;
+    tbody.appendChild(totalRow);
+}
+
+function showReductionModal() {
+    populateModeDropdown('redMode');
+    document.getElementById('reductionModal').classList.add('show');
+}
+
+function saveReductionInitiative() {
+    const name = document.getElementById('redName').value.trim();
+    const mode = document.getElementById('redMode').value;
+    const reduction = parseInt(document.getElementById('redAmount').value);
+    const status = document.getElementById('redStatus').value;
+    if (!name) { toast('Initiative name required.', 'error'); return; }
+    if (!mode) { toast('Target mode required.', 'error'); return; }
+    if (!reduction || reduction <= 0) { toast('Reduction amount must be greater than 0.', 'error'); return; }
+    const reductions = loadData(STORAGE_KEYS.REDUCTIONS);
+    reductions.push({ id: 'r' + Date.now(), name, mode, reduction, status });
+    saveData(STORAGE_KEYS.REDUCTIONS, reductions);
+    closeModal('reductionModal');
+    document.getElementById('redName').value = '';
+    document.getElementById('redAmount').value = '';
+    renderReductionTable();
+    refreshSustainabilityCharts();
+    toast('Initiative added!', 'success');
+}
+
+function deleteReduction(id) {
+    if (!confirm('Remove this initiative?')) return;
+    let reductions = loadData(STORAGE_KEYS.REDUCTIONS);
+    reductions = reductions.filter(r => r.id !== id);
+    saveData(STORAGE_KEYS.REDUCTIONS, reductions);
+    renderReductionTable();
+    refreshSustainabilityCharts();
+    toast('Initiative removed.', 'info');
+}
+
+let reportFilters = {};
+
+function refreshReports() {
+    populateBranchDropdowns();
+    populateModeDropdown('rptMode');
+    populateEmployeeDropdown('rptEmployee');
+    populateFuelDropdown('rptFuel');
+    document.getElementById('reportContent').innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Select a report to generate</p></div>';
+}
+
+function populateEmployeeDropdown(selId) {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES).filter(e => e.status === 'Active');
+    sel.innerHTML = '<option value="">All Employees</option>';
+    employees.forEach(e => { sel.innerHTML += `<option value="${e.empId}">${e.name} (${e.empId})</option>`; });
+}
+
+function applyReportFilters() {
+    reportFilters = {
+        branch: document.getElementById('rptBranch').value,
+        mode: document.getElementById('rptMode').value,
+        fuel: document.getElementById('rptFuel').value,
+        employee: document.getElementById('rptEmployee').value,
+        distRange: document.getElementById('rptDistRange').value
+    };
+}
+
+function clearAllFilters() {
+    ['rptBranch', 'rptMode', 'rptFuel', 'rptEmployee', 'rptDistRange'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    reportFilters = {};
+    toast('Filters cleared.', 'info');
+}
+
+function getFilteredTravelRecords() {
+    let records = loadData(STORAGE_KEYS.TRAVEL).filter(r => r.status !== 'Deleted');
+    if (reportFilters.branch) records = records.filter(r => r.branch === reportFilters.branch);
+    if (reportFilters.mode) records = records.filter(r => r.mode === reportFilters.mode);
+    if (reportFilters.fuel) records = records.filter(r => r.fuel === reportFilters.fuel);
+    if (reportFilters.employee) records = records.filter(r => r.empId === reportFilters.employee);
+    if (reportFilters.distRange) {
+        const [min, max] = reportFilters.distRange.split('-').map(Number);
+        if (max) records = records.filter(r => r.distance >= min && r.distance <= max);
+        else records = records.filter(r => r.distance >= min);
+    }
+    return records;
+}
+
+function generateReport(type) {
+    const records = getFilteredTravelRecords();
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES).filter(e => e.status === 'Active');
+    const branches = loadData(STORAGE_KEYS.BRANCHES);
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    const reductions = loadData(STORAGE_KEYS.REDUCTIONS);
+    const modes = loadData(STORAGE_KEYS.MODES);
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    let html = '';
+    switch(type) {
+        case 'commuting': html = generateCommutingReport(records); break;
+        case 'branch': html = generateBranchReport(records, branches, employees); break;
+        case 'mode': html = generateModeReport(records, modes); break;
+        case 'fuel': html = generateFuelReport(records, fuels); break;
+        case 'distance': html = generateDistanceReport(records); break;
+        case 'co2': html = generateCO2Report(records, factors, employees); break;
+        case 'reduction': html = generateReductionReport(reductions); break;
+    }
+    document.getElementById('reportContent').innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h3>📄 ${getReportTitle(type)}</h3>
+                <div class="actions">
+                    <button class="btn btn-sm btn-primary" onclick="exportReportExcel()">📥 Excel</button>
+                    <button class="btn btn-sm btn-primary" onclick="exportReportCSV()">📥 CSV</button>
+                    <button class="btn btn-sm" onclick="printReport()">🖨️ Print</button>
+                    <button class="btn btn-sm btn-primary" onclick="exportReportPDF()">📥 PDF</button>
+                </div>
+            </div>
+            <div id="reportTableContainer">${html}</div>
+        </div>
+    `;
+}
+
+function getReportTitle(type) {
+    const titles = {
+        commuting: 'Employee Commuting Report',
+        branch: 'Branch-wise Report',
+        mode: 'Travel Mode Report',
+        fuel: 'Fuel Report',
+        distance: 'Distance Report',
+        co2: 'CO₂ Emission Report',
+        reduction: 'Potential CO₂ Reduction Report'
+    };
+    return titles[type] || 'Report';
+}
+
+function generateCommutingReport(records) {
+    const headers = ['S.No', 'Name', 'Employee ID', 'Branch', 'Department', 'Mode of Travel', 'Fuel Type', 'Daily Distance (km)', 'Annual Distance (km)', 'Status'];
+    const rows = records.map((r, i) => [i+1, r.name, r.empId, getBranchName(r.branch), r.dept, r.mode, r.fuel, r.distance, r.distance * WORKING_DAYS, r.status]);
+    return buildTable(headers, rows);
+}
+
+function generateBranchReport(records, branches, employees) {
+    let html = '<h4>Branch-wise Employee & Distance Summary</h4>';
+    const branchData = branches.map(b => {
+        const branchRecords = records.filter(r => r.branch === b.id);
+        const employeeCount = employees.filter(e => e.branch === b.id && e.status === 'Active').length;
+        const totalDailyDist = branchRecords.reduce((s, r) => s + r.distance, 0);
+        const totalAnnualDist = totalDailyDist * WORKING_DAYS;
+        return { name: b.name, count: employeeCount, records: branchRecords.length, dailyDist: totalDailyDist, annualDist: totalAnnualDist };
+    });
+    const headers = ['Branch', 'Active Employees', 'Travel Records', 'Total Daily Distance (km)', 'Total Annual Distance (km)'];
+    const rows = branchData.map(b => [b.name, b.count, b.records, b.dailyDist.toFixed(1), b.annualDist.toFixed(0)]);
+    html += buildTable(headers, rows);
+    return html;
+}
+
+function generateModeReport(records, modes) {
+    let html = '<h4>Travel Mode Distribution</h4>';
+    const modeData = modes.map(m => {
+        const modeRecords = records.filter(r => r.mode === m.name);
+        return { name: m.name, count: modeRecords.length, totalDist: modeRecords.reduce((s, r) => s + r.distance, 0) };
+    });
+    const headers = ['Mode of Travel', 'Number of Employees', 'Total Daily Distance (km)', 'Total Annual Distance (km)'];
+    const rows = modeData.map(m => [m.name, m.count, m.totalDist.toFixed(1), (m.totalDist * WORKING_DAYS).toFixed(0)]);
+    html += buildTable(headers, rows);
+    return html;
+}
+
+function generateFuelReport(records, fuels) {
+    let html = '<h4>Fuel Type Distribution</h4>';
+    const fuelData = fuels.map(f => {
+        const fuelRecords = records.filter(r => r.fuel === f.fuel && r.mode === f.mode);
+        return { mode: f.mode, fuel: f.fuel, count: fuelRecords.length };
+    }).filter(f => f.count > 0);
+    const headers = ['Travel Mode', 'Fuel Type', 'Number of Employees'];
+    const rows = fuelData.map(f => [f.mode, f.fuel, f.count]);
+    html += buildTable(headers, rows);
+    return html;
+}
+
+function generateDistanceReport(records) {
+    let html = '<h4>Distance Analysis</h4>';
+    const stats = {
+        min: records.length > 0 ? Math.min(...records.map(r => r.distance)) : 0,
+        max: records.length > 0 ? Math.max(...records.map(r => r.distance)) : 0,
+        avg: records.length > 0 ? records.reduce((s, r) => s + r.distance, 0) / records.length : 0,
+        total: records.reduce((s, r) => s + r.distance, 0)
+    };
+    html += `<div class="kpi-grid" style="margin-bottom:16px;">
+        <div class="kpi-card"><div class="kpi-label">Min Distance</div><div class="kpi-value">${stats.min}<span class="kpi-unit">km</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Max Distance</div><div class="kpi-value">${stats.max}<span class="kpi-unit">km</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Avg Distance</div><div class="kpi-value">${stats.avg.toFixed(1)}<span class="kpi-unit">km</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Daily Distance</div><div class="kpi-value">${stats.total.toFixed(0)}<span class="kpi-unit">km</span></div></div>
+    </div>`;
+    const headers = ['S.No', 'Name', 'Employee ID', 'Mode', 'Daily Distance (km)', 'Annual Distance (km)'];
+    const rows = records.map((r, i) => [i+1, r.name, r.empId, r.mode, r.distance, r.distance * WORKING_DAYS]);
+    html += buildTable(headers, rows);
+    return html;
+}
+
+function generateCO2Report(records, factors, employees) {
+    let html = '<h4>CO₂ Emission Analysis</h4>';
+    let totalCO2 = 0;
+    const co2ByFuel = {};
+    const co2ByBranch = {};
+    const co2ByMode = {};
+    records.forEach(r => {
+        const factor = factors.find(f => f.vehicleType === r.mode && f.fuelType === r.fuel);
+        let co2 = 0;
+        if (factor) {
+            const fuelUsed = r.distance / factor.economy;
+            co2 = fuelUsed * factor.emissionFactor * WORKING_DAYS;
+        } else {
+            const fallback = factors.find(f => f.fuelType === r.fuel);
+            if (fallback) {
+                const fuelUsed = r.distance / fallback.economy;
+                co2 = fuelUsed * fallback.emissionFactor * WORKING_DAYS;
+            }
+        }
+        totalCO2 += co2;
+        co2ByFuel[r.fuel] = (co2ByFuel[r.fuel] || 0) + co2;
+        co2ByBranch[getBranchName(r.branch)] = (co2ByBranch[getBranchName(r.branch)] || 0) + co2;
+        co2ByMode[r.mode] = (co2ByMode[r.mode] || 0) + co2;
+    });
+    const totalEmployees = employees.length;
+    const co2PerEmployee = totalEmployees > 0 ? totalCO2 / totalEmployees : 0;
+    html += `<div class="kpi-grid" style="margin-bottom:16px;">
+        <div class="kpi-card amber"><div class="kpi-label">Total Annual CO₂</div><div class="kpi-value">${totalCO2.toFixed(1)}<span class="kpi-unit">kg</span></div></div>
+        <div class="kpi-card amber"><div class="kpi-label">CO₂ per Employee</div><div class="kpi-value">${co2PerEmployee.toFixed(2)}<span class="kpi-unit">kg</span></div></div>
+    </div>`;
+    html += '<h4>CO₂ by Fuel Type</h4>';
+    html += buildTable(['Fuel Type', 'Annual CO₂ Emissions (kg)'], Object.entries(co2ByFuel).map(([fuel, co2]) => [fuel, co2.toFixed(1)]));
+    html += '<h4>CO₂ by Branch</h4>';
+    html += buildTable(['Branch', 'Annual CO₂ Emissions (kg)'], Object.entries(co2ByBranch).map(([branch, co2]) => [branch, co2.toFixed(1)]));
+    html += '<h4>CO₂ by Travel Mode</h4>';
+    html += buildTable(['Travel Mode', 'Annual CO₂ Emissions (kg)'], Object.entries(co2ByMode).map(([mode, co2]) => [mode, co2.toFixed(1)]));
+    return html;
+}
+
+function generateReductionReport(reductions) {
+    let html = '<h4>Potential CO₂ Reduction Initiatives</h4>';
+    const activeReductions = reductions.filter(r => r.status !== 'Completed');
+    const totalPotential = activeReductions.reduce((s, r) => s + r.reduction, 0);
+    html += `<div class="kpi-card green" style="margin-bottom:16px;">
+        <div class="kpi-label">Total Potential Annual Reduction</div>
+        <div class="kpi-value">${totalPotential.toLocaleString()}<span class="kpi-unit">kg CO₂</span></div>
+    </div>`;
+    const headers = ['S.No', 'Initiative Name', 'Target Mode', 'Estimated Annual Reduction (kg CO₂)', 'Status'];
+    const rows = reductions.map((r, i) => [i+1, r.name, r.mode, r.reduction.toLocaleString(), r.status]);
+    html += buildTable(headers, rows);
+    return html;
+}
+
+function buildTable(headers, rows) {
+    return `<div class="table-wrap"><table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function exportReportExcel() {
+    const records = getFilteredTravelRecords();
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const branches = loadData(STORAGE_KEYS.BRANCHES);
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    const reductions = loadData(STORAGE_KEYS.REDUCTIONS);
+    const modes = loadData(STORAGE_KEYS.MODES);
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+    const dateStr = new Date().toISOString().split('T')[0];
+    const wb = XLSX.utils.book_new();
+
+    const dailySummary = [
+        ['GreenCommute Daily Report', ''],
+        ['Date', dateStr],
+        ['Generated', new Date().toLocaleString()],
+        ['Company', 'PARC GCC LTD'],
+        [''],
+        ['Total Employees', employees.filter(e => e.status === 'Active').length],
+        ['Total Travel Records', records.length],
+        ['Total Daily Distance (km)', records.reduce((s, r) => s + r.distance, 0)],
+        ['Total Monthly Distance (km)', records.reduce((s, r) => s + r.distance, 0) * 22],
+        ['Total Annual Distance (km)', records.reduce((s, r) => s + r.distance, 0) * WORKING_DAYS],
+        ['Estimated Annual Fuel Consumption', calculateTotalFuel(records, factors)],
+        ['Estimated Annual CO₂ Emissions (kg)', calculateTotalCO2(records, factors)],
+        ['CO₂ per Employee (kg)', employees.filter(e => e.status === 'Active').length > 0 ? calculateTotalCO2(records, factors) / employees.filter(e => e.status === 'Active').length : 0],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dailySummary), 'Daily Summary');
+
+    const empHeaders = ['S.No', 'Name', 'Employee ID', 'Branch', 'Department', 'Mobile', 'Status'];
+    const empRows = employees.map((e, i) => [i+1, e.name, e.empId, getBranchName(e.branch), e.dept, e.mobile, e.status]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([empHeaders, ...empRows]), 'Employee Details');
+
+    const branchHeaders = ['Branch', 'Active Employees', 'Travel Records', 'Total Daily Distance (km)', 'Total Annual Distance (km)'];
+    const branchRows = branches.map(b => {
+        const empCount = employees.filter(e => e.branch === b.id && e.status === 'Active').length;
+        const recCount = records.filter(r => r.branch === b.id).length;
+        const dailyDist = records.filter(r => r.branch === b.id).reduce((s, r) => s + r.distance, 0);
+        return [b.name, empCount, recCount, dailyDist, dailyDist * WORKING_DAYS];
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([branchHeaders, ...branchRows]), 'Branch Analysis');
+
+    const modeHeaders = ['Mode of Travel', 'Number of Employees', 'Total Daily Distance (km)', 'Total Annual Distance (km)'];
+    const modeRows = modes.map(m => {
+        const modeRecs = records.filter(r => r.mode === m.name);
+        const dailyDist = modeRecs.reduce((s, r) => s + r.distance, 0);
+        return [m.name, modeRecs.length, dailyDist, dailyDist * WORKING_DAYS];
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([modeHeaders, ...modeRows]), 'Travel Mode Analysis');
+
+    const fuelHeaders = ['Travel Mode', 'Fuel Type', 'Number of Employees'];
+    const fuelRows = fuels.map(f => {
+        const count = records.filter(r => r.fuel === f.fuel && r.mode === f.mode).length;
+        return [f.mode, f.fuel, count];
+    }).filter(r => r[2] > 0);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([fuelHeaders, ...fuelRows]), 'Fuel Analysis');
+
+    const distHeaders = ['S.No', 'Name', 'Employee ID', 'Mode', 'Daily Distance (km)', 'Annual Distance (km)'];
+    const distRows = records.map((r, i) => [i+1, r.name, r.empId, r.mode, r.distance, r.distance * WORKING_DAYS]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([distHeaders, ...distRows]), 'Distance Analysis');
+
+    const co2Data = [['Fuel Type', 'Annual CO₂ (kg)']];
+    const co2ByFuel = {};
+    records.forEach(r => {
+        const factor = factors.find(f => f.vehicleType === r.mode && f.fuelType === r.fuel);
+        if (factor) {
+            const fuelUsed = r.distance / factor.economy;
+            co2ByFuel[r.fuel] = (co2ByFuel[r.fuel] || 0) + fuelUsed * factor.emissionFactor * WORKING_DAYS;
+        }
+    });
+    Object.entries(co2ByFuel).forEach(([fuel, co2]) => co2Data.push([fuel, Math.round(co2)]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(co2Data), 'CO₂ Emission Analysis');
+
+    const dqHeaders = ['Metric', 'Value'];
+    const dqRows = [
+        ['Total Records', employees.length],
+        ['Complete Records', employees.filter(e => e.name && e.empId && e.branch && e.dept && e.mobile).length],
+        ['Missing Information', employees.filter(e => !e.name || !e.empId || !e.branch || !e.dept || !e.mobile).length],
+        ['Duplicate Attempts Prevented', loadData(STORAGE_KEYS.DUPLICATE_ATTEMPTS).length],
+        ['Inactive Employees', employees.filter(e => e.status === 'Inactive').length],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([dqHeaders, ...dqRows]), 'Data Quality');
+
+    const excelFileName = `GreenCommute_Daily_Report_${dateStr}.xlsx`;
+    XLSX.writeFile(wb, excelFileName);
+
+    const zip = new JSZip();
+    zip.file(excelFileName, () => XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
+    zip.generateAsync({ type: 'blob' }).then(blob => {
+        saveAs(blob, `GreenCommute_Daily_Report_${dateStr}.zip`);
+        toast('Excel report and ZIP file created!', 'success');
+    });
+}
+
+function calculateTotalCO2(records, factors) {
+    let total = 0;
+    records.forEach(r => {
+        const factor = factors.find(f => f.vehicleType === r.mode && f.fuelType === r.fuel);
+        if (factor) { const fuelUsed = r.distance / factor.economy; total += fuelUsed * factor.emissionFactor * WORKING_DAYS; }
+    });
+    return total;
+}
+
+function calculateTotalFuel(records, factors) {
+    let total = 0;
+    records.forEach(r => {
+        const factor = factors.find(f => f.vehicleType === r.mode && f.fuelType === r.fuel);
+        if (factor) { total += r.distance / factor.economy * WORKING_DAYS; }
+    });
+    return total;
+}
+
+function exportReportCSV() {
+    const records = getFilteredTravelRecords();
+    const data = [
+        ['GreenCommute Report', ''],
+        ['Date', new Date().toISOString().split('T')[0]],
+        [],
+        ['S.No', 'Name', 'Employee ID', 'Branch', 'Department', 'Mode', 'Fuel', 'Daily Distance (km)', 'Annual Distance (km)'],
+        ...records.map((r, i) => [i+1, r.name, r.empId, getBranchName(r.branch), r.dept, r.mode, r.fuel, r.distance, r.distance * WORKING_DAYS])
+    ];
+    downloadCSVFromData(data, 'GreenCommute_Report.csv');
+}
+
+function exportReportPDF() {
+    const container = document.getElementById('reportTableContainer');
+    if (!container || container.innerHTML.trim() === '') { toast('Generate a report first.', 'error'); return; }
+    const element = document.getElementById('reportContent');
+    html2canvas(element).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save('GreenCommute_Report.pdf');
+        toast('PDF report generated!', 'success');
+    });
+}
+
+function printReport() { window.print(); }
+
+function refreshDataQuality() {
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const total = employees.length;
+    const complete = employees.filter(e => e.name && e.empId && e.branch && e.dept && e.mobile).length;
+    const missing = total - complete;
+    const inactive = employees.filter(e => e.status === 'Inactive').length;
+    const dupAttempts = loadData(STORAGE_KEYS.DUPLICATE_ATTEMPTS).length;
+
+    const dqGrid = document.getElementById('dqFullGrid');
+    dqGrid.innerHTML = `
+        <div class="dq-item success"><div class="dq-value">${total}</div><div class="dq-label">Total records</div></div>
+        <div class="dq-item success"><div class="dq-value">${complete}</div><div class="dq-label">Complete records</div></div>
+        <div class="dq-item warn"><div class="dq-value">${missing}</div><div class="dq-label">Missing information</div></div>
+        <div class="dq-item warn"><div class="dq-value">${dupAttempts}</div><div class="dq-label">Duplicate attempts</div></div>
+        <div class="dq-item"><div class="dq-value">${inactive}</div><div class="dq-label">Inactive employees</div></div>
+    `;
+
+    const missingRecords = employees.filter(e => !e.name || !e.empId || !e.branch || !e.dept || !e.mobile);
+    const missingTbody = document.querySelector('#missingDataTable tbody');
+    if (missingRecords.length === 0) {
+        missingTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px;">All records are complete. ✓</td></tr>';
+    } else {
+        missingTbody.innerHTML = missingRecords.map((e, i) => {
+            const missingFields = [];
+            if (!e.name) missingFields.push('Name');
+            if (!e.empId) missingFields.push('Emp ID');
+            if (!e.branch) missingFields.push('Branch');
+            if (!e.dept) missingFields.push('Department');
+            if (!e.mobile) missingFields.push('Mobile');
+            return `<tr><td>${i+1}</td><td>${esc(e.empId)}</td><td>${esc(e.name)}</td><td>${missingFields.join(', ')}</td><td>${getBranchName(e.branch)}</td></tr>`;
+        }).join('');
+    }
+
+    const dupAttemptsList = loadData(STORAGE_KEYS.DUPLICATE_ATTEMPTS);
+    const dupTbody = document.querySelector('#dupAttemptsTable tbody');
+    if (dupAttemptsList.length === 0) {
+        dupTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px;">No duplicate attempts recorded. ✓</td></tr>';
+    } else {
+        dupTbody.innerHTML = dupAttemptsList.slice(-50).map((d, i) => `
+            <tr><td>${i+1}</td><td>${esc(d.name)}</td><td>${esc(d.empId)}</td><td>${esc(d.existingName)} (${esc(d.existingEmpId)})</td><td>${new Date(d.timestamp).toLocaleString()}</td></tr>
+        `).join('');
+    }
+}
+
+function refreshUserManagement() { renderUserTable(); }
+
+function clearUserForm() {
+    document.getElementById('userName').value = '';
+    document.getElementById('userPass').value = '';
+    document.getElementById('userFormMsg').innerHTML = '';
+}
+
+function saveUser() {
+    const username = document.getElementById('userName').value.trim();
+    const password = document.getElementById('userPass').value;
+    const role = document.getElementById('userRole').value;
+    const msgEl = document.getElementById('userFormMsg');
+    msgEl.innerHTML = '';
+    if (!username) { document.getElementById('userName').classList.add('error'); return; }
+    if (!password || password.length < 4) { document.getElementById('userPass').classList.add('error'); return; }
+    const users = loadData(STORAGE_KEYS.USERS);
+    if (users.find(u => u.username === username)) {
+        msgEl.innerHTML = '<span style="color:var(--danger);">❌ Username already exists.</span>';
+        return;
+    }
+    users.push({ username, password, role, status: 'Active', changedPw: false });
+    saveData(STORAGE_KEYS.USERS, users);
+    msgEl.innerHTML = '<span style="color:var(--success);">✅ User created!</span>';
+    clearUserForm();
+    renderUserTable();
+    toast('User added!', 'success');
+}
+
+function renderUserTable() {
+    const users = loadData(STORAGE_KEYS.USERS);
+    const tbody = document.querySelector('#userTable tbody');
+    tbody.innerHTML = users.map((u, i) => `
+        <tr>
+            <td>${i+1}</td><td>${esc(u.username)}</td>
+            <td><span class="status-badge ${u.role === 'ADMIN' ? 'status-active' : ''}" style="${u.role === 'ADMIN' ? 'background:var(--danger-light);color:var(--danger);' : ''}">${u.role}</span></td>
+            <td>${u.status}</td>
+            <td class="action-cell">${isAdmin() && u.username !== loadCurrentUser() ? `<button class="btn btn-xs btn-danger" onclick="deleteUser('${u.username}')">🗑️</button>` : ''}</td>
+        </tr>
+    `).join('');
+}
+
+function deleteUser(username) {
+    if (!confirm(`Remove user "${username}"?`)) return;
+    let users = loadData(STORAGE_KEYS.USERS);
+    users = users.filter(u => u.username !== username);
+    saveData(STORAGE_KEYS.USERS, users);
+    renderUserTable();
+    toast('User removed.', 'info');
+}
+
+function clearAllUsers() {
+    if (!confirm('Remove ALL users? This will also log you out.')) return;
+    saveData(STORAGE_KEYS.USERS, []);
+    handleLogout();
+}
+
+function downloadCSV(headers, rows, filename) {
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, filename);
+}
+
+function downloadCSVFromData(data, filename) {
+    const csvContent = data.map(row => row.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, filename);
+}
+
+function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+let emailReportScheduled = false;
+let lastEmailDate = '';
+
+function scheduleDailyEmailReport() {
+    if (emailReportScheduled) return;
+    emailReportScheduled = true;
+    setInterval(() => {
+        const now = new Date();
+        const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const hours = istTime.getHours();
+        const minutes = istTime.getMinutes();
+        const todayStr = istTime.toISOString().split('T')[0];
+        // Schedule: Every day at 11:00 PM IST (UTC+5:30)
+        if (hours === 23 && minutes === 0 && lastEmailDate !== todayStr) {
+            lastEmailDate = todayStr;
+            generateAndNotifyDailyEmailReport();
+        }
+    }, 10000);
+}
+
+function generateAndNotifyDailyEmailReport() {
+    const dateStr = new Date().toISOString().split('T')[0];
+    const recipient = 'ramblackstoneshipping@gmail.com';
+
+    const records = getFilteredTravelRecords();
+    const employees = loadData(STORAGE_KEYS.EMPLOYEES);
+    const branches = loadData(STORAGE_KEYS.BRANCHES);
+    const factors = loadData(STORAGE_KEYS.FACTORS);
+    const reductions = loadData(STORAGE_KEYS.REDUCTIONS);
+    const modes = loadData(STORAGE_KEYS.MODES);
+    const fuels = loadData(STORAGE_KEYS.FUELS);
+
+    const wb = XLSX.utils.book_new();
+    const dateStrFormatted = dateStr;
+
+    const dailySummary = [
+        ['GreenCommute Daily Report', ''],
+        ['Date', dateStrFormatted],
+        ['Generated', new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })],
+        ['Company', 'PARC GCC LTD'],
+        ['Recipient', recipient],
+        [''],
+        ['Total Employees', employees.filter(e => e.status === 'Active').length],
+        ['Total Travel Records', records.length],
+        ['Total Daily Distance (km)', records.reduce((s, r) => s + r.distance, 0)],
+        ['Total Monthly Distance (km)', records.reduce((s, r) => s + r.distance, 0) * 22],
+        ['Total Annual Distance (km)', records.reduce((s, r) => s + r.distance, 0) * WORKING_DAYS],
+        ['Estimated Annual Fuel Consumption', calculateTotalFuel(records, factors)],
+        ['Estimated Annual CO₂ Emissions (kg)', calculateTotalCO2(records, factors)],
+        ['CO₂ per Employee (kg)', employees.filter(e => e.status === 'Active').length > 0 ? calculateTotalCO2(records, factors) / employees.filter(e => e.status === 'Active').length : 0],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dailySummary), 'Daily Summary');
+
+    const empHeaders = ['S.No', 'Name', 'Employee ID', 'Branch', 'Department', 'Mobile', 'Status'];
+    const empRows = employees.map((e, i) => [i+1, e.name, e.empId, getBranchName(e.branch), e.dept, e.mobile, e.status]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([empHeaders, ...empRows]), 'Employee Details');
+
+    const branchHeaders = ['Branch', 'Active Employees', 'Travel Records', 'Total Daily Distance (km)', 'Total Annual Distance (km)'];
+    const branchRows = branches.map(b => {
+        const empCount = employees.filter(e => e.branch === b.id && e.status === 'Active').length;
+        const recCount = records.filter(r => r.branch === b.id).length;
+        const dailyDist = records.filter(r => r.branch === b.id).reduce((s, r) => s + r.distance, 0);
+        return [b.name, empCount, recCount, dailyDist, dailyDist * WORKING_DAYS];
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([branchHeaders, ...branchRows]), 'Branch Analysis');
+
+    const modeHeaders = ['Mode of Travel', 'Number of Employees', 'Total Daily Distance (km)', 'Total Annual Distance (km)'];
+    const modeRows = modes.map(m => {
+        const modeRecs = records.filter(r => r.mode === m.name);
+        const dailyDist = modeRecs.reduce((s, r) => s + r.distance, 0);
+        return [m.name, modeRecs.length, dailyDist, dailyDist * WORKING_DAYS];
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([modeHeaders, ...modeRows]), 'Travel Mode Analysis');
+
+    const fuelHeaders = ['Travel Mode', 'Fuel Type', 'Number of Employees'];
+    const fuelRows = fuels.map(f => {
+        const count = records.filter(r => r.fuel === f.fuel && r.mode === f.mode).length;
+        return [f.mode, f.fuel, count];
+    }).filter(r => r[2] > 0);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([fuelHeaders, ...fuelRows]), 'Fuel Analysis');
+
+    const distHeaders = ['S.No', 'Name', 'Employee ID', 'Mode', 'Daily Distance (km)', 'Annual Distance (km)'];
+    const distRows = records.map((r, i) => [i+1, r.name, r.empId, r.mode, r.distance, r.distance * WORKING_DAYS]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([distHeaders, ...distRows]), 'Distance Analysis');
+
+    const co2ByFuel = {};
+    records.forEach(r => {
+        const factor = factors.find(f => f.vehicleType === r.mode && f.fuelType === r.fuel);
+        if (factor) {
+            const fuelUsed = r.distance / factor.economy;
+            co2ByFuel[r.fuel] = (co2ByFuel[r.fuel] || 0) + fuelUsed * factor.emissionFactor * WORKING_DAYS;
+        }
+    });
+    const co2Data = [['Fuel Type', 'Annual CO₂ Emissions (kg)']];
+    Object.entries(co2ByFuel).forEach(([fuel, co2]) => co2Data.push([fuel, Math.round(co2)]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(co2Data), 'CO₂ Emission Analysis');
+
+    const dqHeaders = ['Metric', 'Value'];
+    const dqRows = [
+        ['Total Records', employees.length],
+        ['Complete Records', employees.filter(e => e.name && e.empId && e.branch && e.dept && e.mobile).length],
+        ['Missing Information', employees.filter(e => !e.name || !e.empId || !e.branch || !e.dept || !e.mobile).length],
+        ['Duplicate Attempts Prevented', loadData(STORAGE_KEYS.DUPLICATE_ATTEMPTS).length],
+        ['Inactive Employees', employees.filter(e => e.status === 'Inactive').length],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([dqHeaders, ...dqRows]), 'Data Quality');
+
+    const excelFileName = `GreenCommute_Daily_Report_${dateStrFormatted}.xlsx`;
+    const zipFileName = `GreenCommute_Daily_Report_${dateStrFormatted}.zip`;
+
+    const zip = new JSZip();
+    zip.file(excelFileName, () => XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
+
+    zip.generateAsync({ type: 'blob' }).then(zipBlob => {
+        saveAs(zipBlob, zipFileName);
+        XLSX.writeFile(wb, excelFileName);
+        const notification = document.createElement('div');
+        notification.className = 'toast success';
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.maxWidth = '400px';
+        notification.innerHTML = `<strong>📧 Daily Report Generated</strong><br>Date: ${dateStrFormatted}<br>Recipient: ${recipient}<br>ZIP: ${zipFileName}<br><span style="font-size:11px;opacity:0.8;">(In production, this would be emailed automatically via backend cron job)</span>`;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 15000);
+        toast('Daily report generated and saved!', 'success');
+    });
+}
+
+function init() {
+    initDatabase();
+    if (localStorage.getItem(STORAGE_KEYS.THEME) === 'dark') {
+        document.body.classList.add('dark');
+        document.getElementById('themeBtn').textContent = '☀️ Light';
+    }
+    const currentUser = loadCurrentUser();
+    if (currentUser) {
+        const users = loadData(STORAGE_KEYS.USERS);
+        const user = users.find(u => u.username === currentUser && u.status === 'Active');
+        if (user) {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('roleBadge').style.display = user.role === 'ADMIN' ? 'inline' : 'none';
+            document.getElementById('roleBadgeUser').style.display = user.role === 'USER' ? 'inline' : 'none';
+            document.getElementById('userNameDisplay').textContent = user.username;
+            buildNav();
+            navigate('dashboard');
+        }
+    }
+    scheduleDailyEmailReport();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
